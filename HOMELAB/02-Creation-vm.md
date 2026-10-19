@@ -36,13 +36,13 @@ Création de deux VM sous **KVM**, à l'aide de **Virt-Manager**.
 
 ### Choix des ressources
 
-Les ressources ont été réparties en tenant compte des capacités de la machine hôte :
+L'allocation des ressources a été définie en fonction des besoins des systèmes et des limites matérielles de l'hôte :
 
-- **RAM :** 6 Go alloués aux deux VM, laissant environ 2 Go pour Debian.
-- **CPU :** 2 vCPU par VM, adaptés aux besoins de ce premier environnement de test.
-- **Stockage :** 40 Go par VM, pour l'installation des systèmes d'exploitation et des services.
+- **RAM :** 2 Go pour Windows Server 2022, dédié au DHCP, et 4 Go pour Windows 11 afin de respecter ses prérequis minimaux. Cette répartition laisse environ 2 Go de RAM pour Debian.
+- **CPU :** 2 vCPU par VM, suffisants comme configuration initiale pour les tâches prévues.
+- **Stockage :** 40 Go par VM, pour accueillir les systèmes d'exploitation et les fichiers nécessaires au projet.
 
-Cette répartition constitue un compromis entre les besoins des machines virtuelles et les ressources disponibles sur l'hôte.
+Cette configuration reste un compromis à valider par des tests de performance, notamment pour Windows Server 2022 avec interface graphique.
 
 ## Configuration réseau initiale
 
