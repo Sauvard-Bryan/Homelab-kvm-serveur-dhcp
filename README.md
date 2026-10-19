@@ -35,9 +35,9 @@ d'entreprise.
 | VM | Rôle | Réseau |
 |:---|:---|:---|
 | VM 1 | Serveur DHCP | 192.168.1.1 |
-| VM 2 | Poste comptabilité | 192.168.2.1 à 192.168.2.10 |
-| VM 3 | Poste communication | 192.168.3.1 à 192.168.3.10 |
-| VM 4 | Routeur (3 cartes réseau) | Relie les 3 réseaux entre eux |
+| VM 2 | Routeur (3 cartes réseau) | Relie les 3 réseaux entre eux |
+| VM 3 | Poste comptabilité | 192.168.2.2 à 192.168.2.4 |
+| VM 4 | Poste communication | 192.168.3.2 à 192.168.3.4 |
 
 ![Schéma réseau](IMAGES/SCHEMA-RESEAU.png)
 
