@@ -39,7 +39,7 @@ d'entreprise.
 | VM 3 | Poste communication | 192.168.3.1 à 192.168.3.10 |
 | VM 4 | Routeur (3 cartes réseau) | Relie les 3 réseaux entre eux |
 
-<img width="978" height="519" alt="SHEMA" src="https://github.com/user-attachments/assets/c109b098-e67e-4cf2-982d-ed33195d68d7" />
+![Schéma réseau](IMAGES/SCHEMA-RESEAU.png)
 
 
 Le but : le serveur DHCP distribue les adresses IP aux postes de
