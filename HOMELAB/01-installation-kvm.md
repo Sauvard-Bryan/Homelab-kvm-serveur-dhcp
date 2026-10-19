@@ -1,3 +1,6 @@
+
+# 01 - Installation de KVM
+
 ## Objectif
 
 Créer, sous **Linux**, un environnement professionnel composé de plusieurs **machines virtuelles (VM)**, se rapprochant d'une infrastructure réseau d'entreprise, afin de pratiquer l'**administration système et réseau**.
@@ -5,8 +8,6 @@ Créer, sous **Linux**, un environnement professionnel composé de plusieurs **m
 ## Pourquoi KVM ?
 
 Initialement, je m'étais orienté vers **VirtualBox** pour sa simplicité de prise en main. Cependant, après plusieurs recherches, j'ai constaté que **KVM** était plus adapté aux objectifs du projet : une solution **performante, intégrée à Linux** et utilisée dans les environnements professionnels.
-
-
 
 ## Installation
 
@@ -20,7 +21,7 @@ Initialement, je m'étais orienté vers **VirtualBox** pour sa simplicité de pr
 
 ### 1. Accès administrateur
 
-Passage en mode administrateur (**root**) pour effectuer l'installation des paquets :
+Passage en mode **root** pour disposer des droits nécessaires à l'installation :
 
 ```bash
 su -
@@ -42,13 +43,13 @@ apt install qemu-kvm libvirt-daemon-system libvirt-clients virt-manager
 
 ### 3. Vérification
 
-Vérification du service libvirt :
+Vérification du fonctionnement du service libvirt :
 
 ```bash
 systemctl status libvirtd
 ```
 
-Lancement de l'interface graphique Virt-Manager depuis la session utilisateur :
+Lancement de **Virt-Manager** depuis la session utilisateur graphique :
 
 ```bash
 virt-manager
@@ -56,6 +57,6 @@ virt-manager
 
 ### 4. Résultat
 
-Environnement de virtualisation opérationnel sous Debian, prêt pour la création des machines virtuelles.
+Environnement de virtualisation opérationnel sous Debian, prêt pour la création et la configuration des machines virtuelles.
 
-**Capture d'écran :** interface Virt-Manager.
+![Interface Virt-Manager](../INTERFACE-VM.png)
