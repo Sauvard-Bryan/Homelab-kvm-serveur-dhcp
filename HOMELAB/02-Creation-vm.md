@@ -42,8 +42,6 @@ L'allocation des ressources a été définie en fonction des besoins des systèm
 - **CPU :** 2 vCPU par VM, suffisants comme configuration initiale pour les tâches prévues.
 - **Stockage :** 40 Go par VM, pour accueillir les systèmes d'exploitation et les fichiers nécessaires au projet.
 
-Cette configuration reste un compromis à valider par des tests de performance, notamment pour Windows Server 2022 avec interface graphique.
-
 ## Configuration réseau initiale
 
 Les deux VM sont connectées au **même réseau virtuel**, sans routeur ni relais DHCP.
