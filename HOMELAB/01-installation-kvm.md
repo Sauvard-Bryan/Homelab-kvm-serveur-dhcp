@@ -59,4 +59,4 @@ virt-manager
 
 Environnement de virtualisation opérationnel sous Debian, prêt pour la création et la configuration des machines virtuelles.
 
-![Interface Virt-Manager](../INTERFACE-VM.png)
+![Interface Virt-Manager](../images/INTERFACE-VM.png)
