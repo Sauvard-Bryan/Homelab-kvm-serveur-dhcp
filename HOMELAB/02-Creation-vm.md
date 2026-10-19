@@ -5,20 +5,20 @@
 
 Créer une première infrastructure réseau composée de **deux machines virtuelles (VM)** : un serveur DHCP et un poste client, connectés au **même réseau virtuel**.
 
-Cette première configuration permet de tester le fonctionnement du DHCP avant d'étendre l'infrastructure à plusieurs réseaux.
+Cette configuration permet de tester le fonctionnement du DHCP avant d'étendre l'infrastructure à plusieurs réseaux.
 
-## Infrastructure initiale
+## Configuration de la machine hôte
 
-Création de deux machines virtuelles sous **KVM**, à l'aide de **Virt-Manager**.
-
-| Machine | Système d'exploitation | Rôle |
-|---------|------------------------|------|
-| SERVER-DHCP | Windows Server 2022 | Serveur DHCP |
-| COMPTA-DEVICE1 | Windows 11 | Poste client |
+- **Système :** Debian
+- **Processeur :** Intel Core i5-1135G7 (4 cœurs / 8 threads)
+- **RAM :** 8 Go
+- **Stockage :** 225 Go
 
 ## Création des machines virtuelles
 
-### 1. VM Serveur DHCP
+Création de deux VM sous **KVM**, à l'aide de **Virt-Manager**.
+
+### 1. Serveur DHCP
 
 - **Nom :** SERVER-DHCP
 - **Système d'exploitation :** Microsoft Windows Server 2022
@@ -26,7 +26,7 @@ Création de deux machines virtuelles sous **KVM**, à l'aide de **Virt-Manager*
 - **CPU :** 2 vCPU
 - **Stockage :** 40 Go
 
-### 2. VM Cliente
+### 2. Poste client
 
 - **Nom :** COMPTA-DEVICE1
 - **Système d'exploitation :** Microsoft Windows 11
@@ -34,36 +34,23 @@ Création de deux machines virtuelles sous **KVM**, à l'aide de **Virt-Manager*
 - **CPU :** 2 vCPU
 - **Stockage :** 40 Go
 
-## Dimensionnement des ressources
+### Choix des ressources
 
-### Configuration de la machine hôte
+Les ressources ont été réparties en tenant compte des capacités de la machine hôte :
 
-- **Système :** Debian
-- **Processeur :** Intel Core i5-1135G7 (4 cœurs / 8 threads)
-- **RAM :** 8 Go
-- **Stockage :** 225 Go
+- **RAM :** 6 Go alloués aux deux VM, laissant environ 2 Go pour Debian.
+- **CPU :** 2 vCPU par VM, adaptés aux besoins de ce premier environnement de test.
+- **Stockage :** 40 Go par VM, pour l'installation des systèmes d'exploitation et des services.
 
-### Optimisation de la mémoire
-
-Initialement, **4 Go de RAM étaient attribués à chaque VM**, soit la totalité des 8 Go disponibles sur la machine hôte.
-
-Afin de limiter la consommation mémoire et de conserver des ressources pour Debian, la répartition a été ajustée :
-
-| Machine | RAM initiale | RAM optimisée |
-|---------|-------------|---------------|
-| SERVER-DHCP | 4 Go | 2 Go |
-| COMPTA-DEVICE1 | 4 Go | 4 Go |
-| **Total VM** | **8 Go** | **6 Go** |
-
-Cette configuration permet de conserver environ **2 Go de RAM pour le système hôte**, sous réserve de la consommation réelle des VM.
-
-Le dimensionnement reste limité, notamment pour Windows Server 2022, et devra être validé par des tests de performance.
+Cette répartition constitue un compromis entre les besoins des machines virtuelles et les ressources disponibles sur l'hôte.
 
 ## Configuration réseau initiale
 
 Les deux VM sont connectées au **même réseau virtuel**, sans routeur ni relais DHCP.
 
-La configuration réseau et le plan d'adressage seront détaillés dans l'étape suivante.
+Cette première configuration permet de tester l'attribution automatique d'une adresse IP par le serveur DHCP au poste client.
+
+La configuration réseau et le plan d'adressage seront détaillés dans la prochaine étape.
 
 ## Résultat
 
@@ -72,17 +59,15 @@ Deux machines virtuelles créées sous KVM :
 - **SERVER-DHCP :** serveur Windows Server 2022.
 - **COMPTA-DEVICE1 :** poste client Windows 11.
 
-Infrastructure prête pour la configuration du réseau et du service DHCP.
-
-*[Capture d'écran des deux VM dans Virt-Manager à ajouter]*
+*Capture d'écran des deux VM dans Virt-Manager à ajouter.*
 
 ## Évolution prévue
 
 Après validation de cette première infrastructure :
 
-- Ajout d'une **deuxième VM cliente** sur un sous-réseau différent.
+- Ajout d'une **deuxième VM cliente** sur un autre sous-réseau.
 - Création d'une **VM routeur** pour assurer la communication entre les réseaux.
-- Configuration d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
+- Mise en place d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
 
 ---
 
