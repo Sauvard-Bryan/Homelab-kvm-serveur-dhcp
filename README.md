@@ -50,13 +50,13 @@ eux et relaie les demandes DHCP vers le serveur.
 ## État du projet
 *Dernière mise à jour : 19/10/2026*
 
-- [X] Installation de Linux sur le PC depuis une clé USB
-- [X] Installation de KVM
+- [ ] Installation de Linux sur le PC depuis une clé USB
+- [ ] Installation de KVM
 - [ ] Création des 3 réseaux virtuels (réseaux 1, 2 et 3)
-- [X] VM 1 : serveur DHCP
+- [ ] VM 1 : serveur DHCP
 - [ ] VM 2 : routeur (3 cartes réseau)
 - [ ] Relais DHCP sur le routeur
-- [X] VM 3 : poste comptabilité
+- [ ] VM 3 : poste comptabilité
 - [ ] VM 4 : poste communication
 - [ ] Test : les postes reçoivent bien leur adresse du serveur DHCP
 
