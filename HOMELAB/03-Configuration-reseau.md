@@ -3,12 +3,12 @@
 
 ## Objectif
 
-Configurer un **réseau virtuel isolé** sous KVM afin de permettre la communication entre les deux VM :
+Mettre en place un **réseau virtuel isolé** sous KVM, permettant la communication entre les deux VM :
 
 - **SERVER-DHCP :** Windows Server 2022
 - **COMPTA-DEVICE1 :** Windows 11
 
-L'objectif est de disposer d'un réseau indépendant, sur lequel le serveur Windows pourra gérer l'attribution des adresses IP.
+Le but est de disposer d'un réseau indépendant, sur lequel le serveur Windows pourra gérer l'attribution des adresses IP via le service DHCP.
 
 ## 1. Configuration initiale
 
@@ -16,9 +16,9 @@ Initialement, je pensais qu'il suffisait de :
 
 - Attribuer une **adresse IP fixe** au serveur Windows.
 - Installer et configurer le service **DHCP**.
-- Configurer le poste client pour recevoir automatiquement une adresse IP.
+- Configurer le poste client pour obtenir automatiquement une adresse IP.
 
-Cependant, lors de la mise en pratique, j'ai rencontré plusieurs difficultés liées à la gestion du réseau virtuel sous KVM.
+Cependant, lors de la mise en pratique, j'ai rencontré plusieurs difficultés liées au fonctionnement du réseau virtuel sous KVM.
 
 ## 2. Difficultés rencontrées
 
@@ -26,55 +26,58 @@ Cependant, lors de la mise en pratique, j'ai rencontré plusieurs difficultés l
 
 Lors de l'installation des systèmes Windows, les interfaces réseau virtuelles n'étaient pas directement reconnues.
 
-Il a donc fallu installer les **pilotes réseau VirtIO** afin de permettre aux deux VM de détecter et d'utiliser leur carte réseau virtuelle.
+Il a donc fallu installer les **pilotes réseau VirtIO** afin de permettre aux VM de détecter leurs cartes réseau virtuelles.
 
 ### Présence d'un DHCP automatique
 
-Lors des premiers essais, j'ai découvert que le réseau par défaut de **KVM/libvirt** disposait déjà de son propre service DHCP.
+Lors des premiers essais, j'ai découvert que le réseau par défaut de **libvirt** disposait déjà de son propre service DHCP.
 
-Cela posait problème pour mon projet, puisque je souhaitais que **SERVER-DHCP** soit le seul serveur chargé de distribuer les adresses IP.
+Or, l'objectif était de laisser **SERVER-DHCP** gérer seul l'attribution des adresses IP.
 
-J'ai donc compris qu'il ne suffisait pas de configurer les adresses IP dans Windows : il fallait également maîtriser le fonctionnement du réseau virtuel sous KVM.
+J'ai donc dû revoir la configuration du réseau virtuel pour éviter que deux services DHCP interviennent sur le même réseau.
 
 ## 3. Solution appliquée
 
-### Création d'un réseau virtuel isolé
+### Création d'un réseau isolé
 
-Création d'un réseau isolé depuis **Virt-Manager**, sans service DHCP fourni par libvirt.
+Création d'un réseau virtuel nommé **SERVER-TO-COMPTA** depuis Virt-Manager.
 
-Ce réseau permet de :
+Configuration retenue :
 
-- Connecter les deux VM au même sous-réseau.
-- Éviter l'intervention du DHCP automatique de libvirt.
-- Confier l'attribution des adresses IP au serveur Windows.
+- **Nom :** SERVER-TO-COMPTA
+- **Type :** Réseau virtuel isolé
+- **DHCP libvirt :** Désactivé
+- **Machines connectées :** SERVER-DHCP et COMPTA-DEVICE1
 
-### Raccordement des machines virtuelles
+Ce réseau permet aux deux VM de communiquer sans utiliser le DHCP automatique du réseau par défaut de libvirt.
 
-Modification de la configuration réseau des deux VM afin de les connecter au nouveau réseau isolé.
+### Raccordement des VM
 
-| Machine | Connexion réseau |
-|---------|------------------|
-| SERVER-DHCP | Réseau virtuel isolé |
-| COMPTA-DEVICE1 | Réseau virtuel isolé |
+Les interfaces réseau des deux machines ont été rattachées au réseau **SERVER-TO-COMPTA**.
+
+| Machine | Réseau virtuel |
+|---------|----------------|
+| SERVER-DHCP | SERVER-TO-COMPTA |
+| COMPTA-DEVICE1 | SERVER-TO-COMPTA |
 
 ## 4. Résultat
 
-Les deux machines virtuelles sont désormais connectées à un **réseau isolé**, indépendant du réseau par défaut de libvirt.
+Les deux machines virtuelles sont désormais connectées au réseau isolé **SERVER-TO-COMPTA**.
 
-L'environnement est prêt pour la configuration du service DHCP sous Windows Server 2022.
+Cette configuration permet de préparer l'installation du service DHCP sous Windows Server 2022, sans interférence avec le DHCP du réseau par défaut de libvirt.
 
-*Capture d'écran de la configuration du réseau isolé dans Virt-Manager à ajouter.*
+*Capture d'écran de la configuration du réseau SERVER-TO-COMPTA dans Virt-Manager à ajouter.*
 
 ## 5. Ce que j'ai appris
 
-Cette étape m'a permis de comprendre la différence entre :
+Cette étape m'a permis de comprendre que la configuration réseau d'une VM ne se limite pas à son adresse IP.
 
-- **L'adressage IP des machines**, configuré dans le système d'exploitation.
-- **La gestion du réseau virtuel**, configurée au niveau de KVM/libvirt.
+Il faut également prendre en compte :
 
-J'ai également découvert l'importance des pilotes VirtIO pour le fonctionnement des périphériques virtuels sous Windows.
+- **Le réseau virtuel** auquel la machine est connectée.
+- **Les services déjà actifs**, notamment le DHCP de libvirt.
+- **Les pilotes réseau** nécessaires au fonctionnement des interfaces virtuelles.
 
 ---
 
-<sub>**Ressources :** Connaissances personnelles en adressage IP, tutoriels YouTube et utilisation de l'intelligence artificielle pour comprendre le fonctionnement des réseaux KVM et résoudre les difficultés rencontrées.</sub>
-
+<sub>**Ressources :** Connaissances personnelles en adressage IP, tutoriels YouTube et utilisation de l'intelligence artificielle pour comprendre les réseaux virtuels sous KVM et résoudre les difficultés rencontrées.</sub>
