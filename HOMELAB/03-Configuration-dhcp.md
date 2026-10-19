@@ -1,83 +1,103 @@
 
-# 03 - Configuration du réseau virtuel
+# 03 - Installation et configuration du DHCP
 
 ## Objectif
 
-Mettre en place un **réseau virtuel isolé** sous KVM, permettant la communication entre les deux VM :
+Installer et configurer un **serveur DHCP sous Windows Server 2022** afin de distribuer automatiquement des adresses IP aux machines clientes du réseau `192.168.1.0/24`.
 
-- **SERVER-DHCP :** Windows Server 2022
-- **COMPTA-DEVICE1 :** Windows 11
+## 1. Installation des rôles
 
-Le but est de disposer d'un réseau indépendant, sur lequel le serveur Windows pourra gérer l'attribution des adresses IP via le service DHCP.
+Depuis le **Gestionnaire de serveur** de Windows Server 2022 :
 
-## 1. Configuration initiale
+1. Sélection de **Ajouter des rôles et fonctionnalités**.
+2. Installation du rôle **Serveur DHCP**.
+3. Installation du rôle **Serveur DNS**.
 
-Initialement, je pensais qu'il suffisait de :
+Le rôle DHCP permet l'attribution automatique des adresses IP. Le rôle DNS a été installé en complément pour la résolution de noms.
 
-- Attribuer une **adresse IP fixe** au serveur Windows.
-- Installer et configurer le service **DHCP**.
-- Configurer le poste client pour obtenir automatiquement une adresse IP.
+## 2. Configuration de l'étendue DHCP
 
-Cependant, lors de la mise en pratique, j'ai rencontré plusieurs difficultés liées au fonctionnement du réseau virtuel sous KVM.
+Création d'une nouvelle étendue depuis la console DHCP.
 
-## 2. Difficultés rencontrées
+| Paramètre | Configuration |
+|-----------|---------------|
+| Réseau | 192.168.1.0/24 |
+| Adresse de début | 192.168.1.2 |
+| Adresse de fin | 192.168.1.4 |
+| Masque | 255.255.255.0 |
+| Durée du bail | 8 jours |
+| Passerelle | Non configurée |
 
-### Reconnaissance des interfaces réseau
+La plage `192.168.1.2` à `192.168.1.4` permet de distribuer automatiquement **3 adresses IPv4**.
 
-Lors de l'installation des systèmes Windows, les interfaces réseau virtuelles n'étaient pas directement reconnues.
+La durée du bail de **8 jours** correspond à la valeur proposée par défaut lors de la configuration.
 
-Il a donc fallu installer les **pilotes réseau VirtIO** afin de permettre aux VM de détecter leurs cartes réseau virtuelles.
+## 3. Configuration de l'adresse IP fixe
 
-### Présence d'un DHCP automatique
+Après la création de l'étendue, j'ai constaté que je n'avais pas encore attribué d'adresse IP fixe au serveur.
 
-Lors des premiers essais, j'ai découvert que le réseau par défaut de **libvirt** disposait déjà de son propre service DHCP.
+J'ai donc procédé à sa configuration :
 
-Or, l'objectif était de laisser **SERVER-DHCP** gérer seul l'attribution des adresses IP.
+1. Ouverture de **Exécuter** avec `Win + R`.
+2. Saisie de la commande :
 
-J'ai donc dû revoir la configuration du réseau virtuel pour éviter que deux services DHCP interviennent sur le même réseau.
+```cmd
+ncpa.cpl
+```
 
-## 3. Solution appliquée
+3. Ouverture des propriétés de la carte réseau.
+4. Sélection de **Protocole Internet version 4 (TCP/IPv4)**.
+5. Configuration manuelle de l'adresse IP.
 
-### Création d'un réseau isolé
+| Paramètre | Configuration |
+|-----------|---------------|
+| Adresse IPv4 | 192.168.1.1 |
+| Masque | 255.255.255.0 |
+| Passerelle | Non configurée |
+| DNS préféré | 192.168.1.1 |
 
-Création d'un réseau virtuel nommé **SERVER-TO-COMPTA** depuis Virt-Manager.
+L'adresse `192.168.1.1` a été choisie pour placer le serveur dans le même sous-réseau que les futurs clients, tout en restant **en dehors de la plage DHCP**.
 
-Configuration retenue :
+## 4. Vérification de la configuration
 
-- **Nom :** SERVER-TO-COMPTA
-- **Type :** Réseau virtuel isolé
-- **DHCP libvirt :** Désactivé
-- **Machines connectées :** SERVER-DHCP et COMPTA-DEVICE1
+Ouverture du terminal Windows et exécution de la commande :
 
-Ce réseau permet aux deux VM de communiquer sans utiliser le DHCP automatique du réseau par défaut de libvirt.
+```cmd
+ipconfig
+```
 
-### Raccordement des VM
+Cette commande a permis de vérifier que le serveur utilisait bien l'adresse IPv4 statique `192.168.1.1` et le masque `255.255.255.0`.
 
-Les interfaces réseau des deux machines ont été rattachées au réseau **SERVER-TO-COMPTA**.
+Vérification également de l'activation de l'étendue depuis la console DHCP.
 
-| Machine | Réseau virtuel |
-|---------|----------------|
-| SERVER-DHCP | SERVER-TO-COMPTA |
-| COMPTA-DEVICE1 | SERVER-TO-COMPTA |
+## 5. Premiers tests et difficultés
 
-## 4. Résultat
+Après la configuration du serveur, j'ai effectué un premier test depuis **COMPTA-DEVICE1**, configuré pour obtenir automatiquement son adresse IP.
 
-Les deux machines virtuelles sont désormais connectées au réseau isolé **SERVER-TO-COMPTA**.
+Commande utilisée :
 
-Cette configuration permet de préparer l'installation du service DHCP sous Windows Server 2022, sans interférence avec le DHCP du réseau par défaut de libvirt.
+```cmd
+ipconfig /renew
+```
 
-*Capture d'écran de la configuration du réseau SERVER-TO-COMPTA dans Virt-Manager à ajouter.*
+**Résultat : échec de l'attribution d'une adresse IP**, avec une erreur de dépassement du délai d'attente.
 
-## 5. Ce que j'ai appris
+Malgré l'installation du service DHCP et l'activation de l'étendue, le poste client ne parvenait pas à obtenir sa configuration réseau.
 
-Cette étape m'a permis de comprendre que la configuration réseau d'une VM ne se limite pas à son adresse IP.
+Les investigations m'ont amené à examiner la configuration du réseau virtuel sous **KVM/libvirt**, notamment la présence du DHCP automatique sur le réseau par défaut.
 
-Il faut également prendre en compte :
+Ce problème sera traité dans l'étape suivante : **création d'un réseau virtuel isolé**.
 
-- **Le réseau virtuel** auquel la machine est connectée.
-- **Les services déjà actifs**, notamment le DHCP de libvirt.
-- **Les pilotes réseau** nécessaires au fonctionnement des interfaces virtuelles.
+## 6. Résultat de cette étape
+
+- Rôles **DHCP et DNS** installés sur Windows Server 2022.
+- Adresse IPv4 statique `192.168.1.1/24` configurée.
+- Étendue DHCP `192.168.1.2` à `192.168.1.4` créée et activée.
+- Configuration IP du serveur vérifiée.
+- Attribution DHCP au poste client **non fonctionnelle à ce stade**.
+
+La prochaine étape consistera à corriger la configuration du réseau virtuel pour permettre la communication entre les deux machines.
 
 ---
 
-<sub>**Ressources :** Connaissances personnelles en adressage IP, tutoriels YouTube et utilisation de l'intelligence artificielle pour comprendre les réseaux virtuels sous KVM et résoudre les difficultés rencontrées.</sub>
+<sub>**Ressources :** Connaissances personnelles en adressage IP et DHCP, tutoriels YouTube et utilisation de l'intelligence artificielle pour accompagner la configuration et le diagnostic des problèmes rencontrés.</sub>
