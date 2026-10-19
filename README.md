@@ -24,7 +24,7 @@ Ce que je découvre avec ce projet :
 - Le fonctionnement concret d'un réseau (DHCP, adresses IP..)
 
 J'apprends en m'appuyant sur des ressources en ligne, notamment la documentation disponible sur GitHub et Reddit, 
-ainsi que des tutoriels sur YouTube. Je mets ensuite mes connaissances en pratique en montant
+ainsi que des tutoriels sur YouTube.
 
 ## Objectif du projet
 Installer Linux sur un PC depuis une clé USB, puis utiliser la
@@ -54,10 +54,10 @@ eux et relaie les demandes DHCP vers le serveur.
 - [X] Installation de KVM
 - [ ] Création des 3 réseaux virtuels (réseaux 1, 2 et 3)
 - [X] VM 1 : serveur DHCP
-- [ ] VM 4 : routeur (3 cartes réseau)
+- [ ] VM 2 : routeur (3 cartes réseau)
 - [ ] Relais DHCP sur le routeur
-- [X] VM 2 : poste comptabilité
-- [ ] VM 3 : poste communication
+- [X] VM 3 : poste comptabilité
+- [ ] VM 4 : poste communication
 - [ ] Test : les postes reçoivent bien leur adresse du serveur DHCP
 
 **En cours :** 
