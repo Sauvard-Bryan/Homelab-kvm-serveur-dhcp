@@ -42,14 +42,6 @@ L'allocation des ressources a été définie en fonction des besoins des systèm
 - **CPU :** 2 vCPU par VM, suffisants comme configuration initiale pour les tâches prévues.
 - **Stockage :** 40 Go par VM, pour accueillir les systèmes d'exploitation et les fichiers nécessaires au projet.
 
-## Configuration réseau initiale
-
-Les deux VM sont connectées au **même réseau virtuel**, sans routeur ni relais DHCP.
-
-Cette première configuration permet de tester l'attribution automatique d'une adresse IP par le serveur DHCP au poste client.
-
-La configuration réseau et le plan d'adressage seront détaillés dans la prochaine étape.
-
 ## Résultat
 
 Deux machines virtuelles créées sous KVM :
@@ -63,9 +55,9 @@ Deux machines virtuelles créées sous KVM :
 
 Après validation de cette première infrastructure :
 
+- Mise en place d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
 - Ajout d'une **deuxième VM cliente** sur un autre sous-réseau.
 - Création d'une **VM routeur** pour assurer la communication entre les réseaux.
-- Mise en place d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
 
 ---
 
