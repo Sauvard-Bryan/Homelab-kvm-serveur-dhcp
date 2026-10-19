@@ -61,4 +61,6 @@ Après validation de cette première infrastructure :
 
 ---
 
-<sub>**Ressources :** Tutoriels YouTube et utilisation de l'intelligence artificielle pour accompagner la configuration, comprendre les concepts et résoudre les problèmes rencontrés.</sub>
+---
+
+<sub>**Ressources :** Connaissances personnelles en matériel informatique (RAM, CPU, stockage), tutoriels YouTube et utilisation de l'intelligence artificielle pour approfondir les notions techniques et accompagner la configuration.</sub>
