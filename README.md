@@ -2,7 +2,7 @@
 
 | Linux | Virtualisation (KVM) | Machines virtuelles | Réseau (IP, DHCP) |
 |:---:|:---:|:---:|:---:|
-| 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦⬜⬜⬜ |
+| 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦🟦⬜⬜ |
 
 <sub>Échelle : 🟦⬜⬜⬜ Découverte · 🟦🟦⬜⬜ Apprentissage · 🟦🟦🟦⬜ Pratique · 🟦🟦🟦🟦 Maîtrise</sub>
 
