@@ -14,10 +14,11 @@ Initialement, je m'étais orienté vers **VirtualBox** pour sa simplicité de pr
 ### Environnement utilisé
 
 - **Système hôte :** Debian
-- **Hyperviseur :** KVM
-- **Émulation et virtualisation :** QEMU
-- **Gestion des machines virtuelles :** libvirt
-- **Interface graphique :** Virt-Manager
+- **KVM :** Hyperviseur intégré au noyau Linux.
+- **QEMU :** Exécution des machines virtuelles.
+- **libvirt :** Gestion des VM et des réseaux virtuels.
+- **Virt-Manager :** Interface graphique d'administration des VM.
+
 
 ### 1. Accès administrateur
 
