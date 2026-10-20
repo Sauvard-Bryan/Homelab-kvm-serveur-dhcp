@@ -3,94 +3,90 @@
 
 ## Objectif
 
-Vérifier le fonctionnement du **serveur DHCP** et la communication entre les deux machines virtuelles :
+Vérifier le bon fonctionnement du **serveur DHCP** et la communication entre les deux machines virtuelles :
 
 - **SERVER-DHCP :** Windows Server 2022
 - **COMPTA-DEVICE1 :** Windows 11
 
-## 1. Vérification de l'attribution DHCP
+## 1. Test DHCP depuis le client
 
-Sur **COMPTA-DEVICE1**, configuration de la carte réseau pour obtenir automatiquement une adresse IP.
+Une fois les deux VM installées et le réseau configuré, lancement des premiers tests sur **COMPTA-DEVICE1**.
 
-Exécution des commandes :
+Dans le terminal Windows :
 
 ```cmd
 ipconfig /release
 ipconfig /renew
 ```
 
-- `ipconfig /release` : libère l'adresse IP actuelle.
-- `ipconfig /renew` : demande une nouvelle configuration au serveur DHCP.
+- **`ipconfig /release` :** libère le bail DHCP actuel.
+- **`ipconfig /renew` :** demande une nouvelle configuration IP au serveur DHCP.
 
-**Résultat :** le client reçoit automatiquement une adresse IP depuis SERVER-DHCP.
+L'objectif était de forcer une nouvelle attribution, afin de vérifier que l'adresse IP provenait bien du serveur DHCP configuré.
+
+**Résultat :** renouvellement effectué avec succès.
 
 ## 2. Vérification de la configuration IP
 
-Sur le poste client :
+Pour contrôler l'ensemble des informations réseau :
 
 ```cmd
 ipconfig /all
 ```
 
-Vérification des paramètres réseau :
+Vérification des paramètres suivants :
 
-| Paramètre | Résultat attendu |
-|-----------|------------------|
+| Paramètre | Configuration attendue |
+|-----------|------------------------|
 | DHCP activé | Oui |
 | Adresse IPv4 | 192.168.1.2 à 192.168.1.4 |
 | Masque | 255.255.255.0 |
 | Serveur DHCP | 192.168.1.1 |
 | Passerelle | Non configurée |
 
-Le poste client reçoit une adresse appartenant à l'étendue configurée sur le serveur Windows.
+La configuration obtenue correspond à l'étendue créée sur **SERVER-DHCP**.
 
 ![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIGALL.png)
 
-## 3. Vérification côté serveur DHCP
+## 3. Vérification côté serveur
 
-Sur **SERVER-DHCP**, ouverture de PowerShell en administrateur.
+Afin de contrôler également le fonctionnement du DHCP depuis **SERVER-DHCP**, utilisation de PowerShell.
 
-### Vérification du service DHCP
+### État du service
 
 ```powershell
 Get-Service DHCPServer
 ```
 
-Cette commande permet de vérifier que le service DHCP est en cours d'exécution (`Running`).
+Permet de vérifier que le service DHCP est en cours d'exécution.
 
-### Vérification de l'étendue DHCP
+### Configuration de l'étendue
 
 ```powershell
 Get-DhcpServerv4Scope
 ```
 
-Vérification des paramètres :
+Permet de consulter la plage d'adresses configurée et son état.
 
-- **ScopeId :** 192.168.1.0
-- **StartRange :** 192.168.1.2
-- **EndRange :** 192.168.1.4
-- **SubnetMask :** 255.255.255.0
-- **State :** Active
-
-### Vérification des baux DHCP
+### Baux DHCP
 
 ```powershell
 Get-DhcpServerv4Lease -ScopeId 192.168.1.0
 ```
 
-Cette commande permet de consulter les adresses IP attribuées aux machines clientes.
+Permet de consulter les adresses attribuées aux machines clientes.
 
-![Vérification DHCP avec PowerShell](../IMAGES/POWERSELL-DHCP.png)
+![Vérification du DHCP avec PowerShell](../IMAGES/POWERSELL-DHCP.png)
 
 ## 4. Test de connectivité
 
-Depuis **COMPTA-DEVICE1**, test de communication avec le serveur :
+Depuis **COMPTA-DEVICE1**, lancement d'un test de communication avec le serveur :
 
 ```cmd
 ping 192.168.1.1
 ```
 
-**Résultat initial : échec du ping**, malgré le bon fonctionnement du DHCP.
+**Résultat initial : échec du ping**, alors que le DHCP fonctionnait correctement.
 
 ### Problème rencontré
 
@@ -98,16 +94,16 @@ Face à cet échec, j'ai commencé par vérifier les éléments que je connaissa
 
 - L'adresse IP attribuée au client.
 - L'adresse IP fixe du serveur.
-- Le fonctionnement du service DHCP.
-- La configuration IP du serveur avec `ipconfig`.
+- Le fonctionnement du serveur DHCP.
+- La configuration réseau du serveur avec `ipconfig`.
 
-Toutes ces vérifications étant correctes, j'ai supposé que le problème pouvait provenir d'un élément que je ne connaissais pas encore.
+Toutes ces vérifications étant correctes, j'ai envisagé que le problème pouvait provenir d'un élément que je ne connaissais pas encore.
 
 ### Recherche et résolution
 
-Après des recherches et avec l'aide de l'IA, j'ai découvert que le **pare-feu Windows Server** pouvait bloquer les requêtes **ICMPv4**, utilisées par la commande `ping`.
+Après des recherches et avec l'aide de l'IA, j'ai découvert que le **pare-feu Windows Server** pouvait bloquer les requêtes ICMPv4, utilisées par la commande `ping`.
 
-Sur **SERVER-DHCP**, ouverture de la configuration avancée du pare-feu :
+Ouverture de la configuration avancée du pare-feu sur **SERVER-DHCP** :
 
 ```cmd
 wf.msc
@@ -117,11 +113,11 @@ Puis :
 
 1. Accès aux **règles de trafic entrant**.
 2. Recherche de la règle **Demande d'écho - Trafic entrant ICMPv4**.
-3. Activation de la règle autorisant les requêtes ping.
+3. Activation de cette règle.
 
-### Vérification après correction
+### Nouveau test
 
-Nouveau test depuis **COMPTA-DEVICE1** :
+Depuis **COMPTA-DEVICE1** :
 
 ```cmd
 ping 192.168.1.1
@@ -129,42 +125,35 @@ ping 192.168.1.1
 
 **Résultat : ping réussi.**
 
-Le problème provenait donc du filtrage ICMPv4 par le pare-feu Windows Server.
+Le problème provenait du filtrage ICMPv4 par le pare-feu Windows Server.
 
 ![Test de connectivité réussi](../IMAGES/PING-192.168.1.1.png)
 
 ## 5. Résultat final
 
-La première infrastructure réseau est **opérationnelle**.
+La première infrastructure réseau est **fonctionnelle**.
 
-| Test | Résultat |
-|------|----------|
-| Service DHCP fonctionnel | ✅ Validé |
-| Étendue DHCP configurée | ✅ Validé |
-| Attribution automatique DHCP | ✅ Validé |
+| Vérification | Résultat |
+|--------------|----------|
+| Attribution DHCP | ✅ Validé |
 | Renouvellement du bail DHCP | ✅ Validé |
-| Communication entre les VM | ✅ Validé |
-| Correction du problème ICMPv4 | ✅ Validé |
+| Configuration IP du client | ✅ Validé |
+| Service DHCP Windows | ✅ Validé |
+| Communication client / serveur | ✅ Validé |
+| Résolution du blocage ICMPv4 | ✅ Validé |
 
 ## 6. Ce que j'ai appris
 
-Cette étape m'a permis de comprendre :
+Cette étape m'a permis de découvrir une nouvelle dimension du diagnostic réseau : **un service peut fonctionner correctement alors qu'un autre type de communication est bloqué**.
 
-- L'utilisation de **PowerShell** pour contrôler les services et les paramètres DHCP.
-- La différence entre les protocoles **UDP (DHCP)** et **ICMP (ping)**.
-- Le rôle du **pare-feu Windows** dans le filtrage des communications.
-- L'importance de vérifier plusieurs éléments avant de rechercher une nouvelle cause à un problème.
+J'ai notamment appris à différencier :
 
-Cette découverte m'a également amené à m'interroger sur les bonnes pratiques de filtrage réseau.
+- **DHCP (UDP)** : attribution automatique de la configuration réseau.
+- **ICMP** : protocole utilisé notamment par `ping`.
+- **Pare-feu Windows** : filtrage des communications selon les règles configurées.
 
-Une étape de **sécurisation de l'infrastructure** sera ajoutée après la mise en place complète du homelab.
-
-## 7. Prochaine évolution
-
-- Ajout d'une **deuxième VM cliente** sur un autre sous-réseau.
-- Création d'une **VM routeur** pour relier les réseaux.
-- Mise en place d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
+Cette difficulté m'a également amené à m'interroger sur les bonnes pratiques de sécurité. Une étape dédiée à la **sécurisation de l'infrastructure** sera ajoutée à la fin du projet.
 
 ---
 
-<sub>**Ressources :** Connaissances personnelles en réseau, tutoriels YouTube et utilisation de l'intelligence artificielle pour accompagner les tests, approfondir les notions techniques et résoudre les difficultés rencontrées.</sub>
+<sub>**Ressources :** Connaissances personnelles en réseau, tutoriels YouTube et utilisation de l'intelligence artificielle pour approfondir les notions techniques et accompagner la résolution des problèmes.</sub>
