@@ -30,9 +30,7 @@ L'objectif était de forcer une nouvelle attribution afin de ne pas se fier à u
 
 ### Vérification de l'adresse attribuée
 
-Pour rappel, **COMPTA-DEVICE1** doit recevoir une configuration IP correspondant à l'étendue DHCP créée sur **SERVER-DHCP**.
-
-La configuration attendue est donc la suivante :
+Pour rappel, **COMPTA-DEVICE1** doit recevoir une configuration IP correspondant à la configuration suivante : 
 
 | Paramètre | Configuration attendue |
 |-----------|------------------------|
