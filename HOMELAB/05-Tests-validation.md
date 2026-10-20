@@ -44,7 +44,7 @@ Vérification des paramètres réseau :
 
 Le poste client reçoit une adresse appartenant à l'étendue configurée sur le serveur Windows.
 
-![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIG.png)
+![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIGALL.png)
 
 ## 3. Vérification côté serveur DHCP
 
@@ -80,7 +80,7 @@ Get-DhcpServerv4Lease -ScopeId 192.168.1.0
 
 Cette commande permet de consulter les adresses IP attribuées aux machines clientes.
 
-![Vérification DHCP avec PowerShell](../IMAGES/DHCP-POWERSELL.png)
+![Vérification DHCP avec PowerShell](../IMAGES/POWERSELL-DHCP.png)
 
 ## 4. Test de connectivité
 
@@ -131,7 +131,7 @@ ping 192.168.1.1
 
 Le problème provenait donc du filtrage ICMPv4 par le pare-feu Windows Server.
 
-![Test de connectivité réussi](../IMAGES/PING%20192.168.1.1.png)
+![Test de connectivité réussi](../IMAGES/PING-192.168.1.1.png)
 
 ## 5. Résultat final
 
