@@ -74,9 +74,9 @@ J'ai également vérifié que l'étendue DHCP était activée depuis la console 
 
 ## 5. Premiers tests et difficultés
 
-Après la configuration du serveur, j'ai effectué un premier test depuis **COMPTA-DEVICE1**.
+Au départ, je pensais qu'il suffisait d'installer et de configurer le serveur DHCP pour que **COMPTA-DEVICE1** récupère automatiquement une adresse IP depuis celui-ci.
 
-L'objectif était de vérifier que le client obtenait automatiquement une adresse IP appartenant à l'étendue configurée sur **SERVER-DHCP**.
+J'ai donc effectué un premier test depuis le client pour vérifier que cette attribution fonctionnait.
 
 La configuration attendue était la suivante :
 
@@ -103,15 +103,13 @@ L'adresse attribuée est `192.168.122.170`, avec une passerelle `192.168.122.1`.
 
 ### Identification du serveur DHCP
 
-Pour comprendre d'où provenait cette adresse, j'ai utilisé :
+Pour vérifier d'où provenait cette configuration, j'ai utilisé :
 
 ```cmd
 ipconfig /all
 ```
 
-Cette commande permet notamment de consulter l'adresse du serveur DHCP ayant attribué la configuration réseau.
-
-La capture confirme les informations suivantes :
+La commande affiche notamment les informations suivantes :
 
 | Paramètre | Résultat obtenu |
 |-----------|-----------------|
@@ -123,19 +121,21 @@ La capture confirme les informations suivantes :
 
 ![Identification du serveur DHCP](../IMAGES/IPCONFIG-ALL.png)
 
-Le client reçoit donc bien une configuration par DHCP, **mais pas depuis SERVER-DHCP (`192.168.1.1`)**.
+Le client reçoit donc bien une adresse par DHCP, **mais pas depuis mon serveur Windows (`192.168.1.1`)**.
 
 ### Recherche du problème
 
-En poursuivant mes recherches sur la configuration réseau de **KVM/libvirt**, j'ai découvert que son réseau virtuel par défaut disposait de son propre service DHCP.
+Je ne comprenais pas pourquoi le client recevait une adresse IP différente de celle prévue, alors que mon serveur DHCP était configuré.
 
-Ce réseau utilise généralement la plage `192.168.122.0/24`, ce qui correspond à la configuration reçue par mon client.
+Après m'être renseigné sur ce problème, j'ai découvert que **KVM/libvirt créait par défaut un réseau virtuel disposant de son propre service DHCP**.
 
-J'ai alors compris que la configuration du DHCP sous Windows Server ne suffisait pas : il fallait également prendre en compte **le réseau virtuel auquel les machines étaient connectées**.
+Ce service pouvait donc attribuer des adresses IP aux machines virtuelles, indépendamment du serveur DHCP que j'avais installé sous Windows Server.
 
-Pour que **SERVER-DHCP** puisse distribuer les adresses IP souhaitées, j'ai décidé de revoir cette configuration.
+J'ai alors compris que **la configuration du serveur DHCP ne suffisait pas à elle seule** : il fallait également configurer le réseau virtuel pour que mes deux VM puissent utiliser le DHCP de Windows Server.
 
-La création d'un réseau virtuel isolé sera présentée dans l'étape suivante.
+J'ai donc décidé de créer un **réseau virtuel isolé**, sans DHCP fourni par libvirt.
+
+Cette configuration sera présentée dans l'étape suivante.
 
 ## 6. Résultat de cette étape
 
