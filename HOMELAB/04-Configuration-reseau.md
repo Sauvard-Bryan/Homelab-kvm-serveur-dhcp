@@ -3,31 +3,39 @@
 
 ## Objectif
 
-Résoudre le problème d'attribution des adresses IP rencontré lors des premiers tests DHCP, en configurant un **réseau virtuel isolé sous KVM/libvirt**.
+Configurer un **réseau virtuel isolé sous KVM/libvirt** afin que les adresses IP soient distribuées par **SERVER-DHCP**, et non par le service DHCP du réseau virtuel par défaut.
 
 ## 1. Identification du problème
 
-Lors des premiers tests, le poste **COMPTA-DEVICE1** ne parvenait pas à obtenir une adresse IP depuis **SERVER-DHCP**.
-
-Malgré une étendue DHCP créée et activée, la commande :
+Lors des premiers tests présentés dans l'étape précédente, **COMPTA-DEVICE1** obtenait bien une adresse IP après l'exécution de :
 
 ```cmd
 ipconfig /renew
 ```
 
-renvoyait une **erreur de dépassement du délai d'attente**.
+Cependant, l'adresse reçue était `192.168.122.170`, alors que j'attendais une adresse comprise entre `192.168.1.2` et `192.168.1.4`.
 
-J'ai donc poursuivi les vérifications en m'intéressant à la configuration réseau des machines virtuelles.
+Avec la commande :
+
+```cmd
+ipconfig /all
+```
+
+J'avais également constaté que le serveur DHCP indiqué était `192.168.122.1`, et non **SERVER-DHCP (`192.168.1.1`)**.
+
+Le problème n'était donc pas l'absence d'attribution DHCP, mais le fait que **le client recevait une adresse provenant d'un autre serveur DHCP**.
 
 ## 2. Découverte du réseau par défaut
 
-En examinant la configuration de **KVM/libvirt**, j'ai découvert que le réseau virtuel par défaut disposait déjà de son propre service DHCP.
+Au départ, je pensais qu'il suffisait de configurer le serveur DHCP sous Windows Server pour que les machines clientes récupèrent automatiquement leurs adresses IP.
 
-Initialement, je pensais qu'il suffisait de configurer une adresse IP fixe sur Windows Server, puis d'activer le service DHCP pour distribuer des adresses aux clients.
+Après m'être renseigné sur les résultats obtenus, j'ai découvert que **KVM/libvirt disposait d'un réseau virtuel par défaut avec son propre service DHCP**.
 
-Cette difficulté m'a permis de comprendre qu'il fallait également prendre en compte **l'infrastructure réseau virtuelle**, et pas uniquement la configuration des systèmes Windows.
+Ce réseau utilisait la plage `192.168.122.0/24`, ce qui correspondait à l'adresse attribuée à mon client.
 
-J'ai donc décidé de créer un réseau dédié à mon projet, sans DHCP fourni par libvirt.
+J'ai alors compris qu'il fallait également prendre en compte la configuration réseau de **KVM/libvirt**, et pas uniquement celle des machines Windows.
+
+J'ai donc choisi de créer un réseau dédié à mon projet, sans DHCP fourni par libvirt.
 
 ## 3. Création du réseau isolé
 
@@ -42,26 +50,28 @@ Configuration retenue :
 | DHCP libvirt | Désactivé |
 | VM connectées | SERVER-DHCP et COMPTA-DEVICE1 |
 
-L'objectif est que **SERVER-DHCP** soit le seul équipement chargé de distribuer les adresses IP sur ce réseau.
+L'objectif est que **SERVER-DHCP** soit le seul serveur chargé de distribuer les adresses IP sur ce réseau.
 
 ## 4. Raccordement des machines virtuelles
 
-Les interfaces réseau des deux VM ont été rattachées au réseau **SERVER-TO-COMPTA** depuis Virt-Manager.
+Depuis **Virt-Manager**, les interfaces réseau des deux VM ont été rattachées au réseau **SERVER-TO-COMPTA**.
 
 | Machine | Réseau virtuel |
 |---------|----------------|
 | SERVER-DHCP | SERVER-TO-COMPTA |
 | COMPTA-DEVICE1 | SERVER-TO-COMPTA |
 
-Les deux machines se trouvent ainsi sur un même réseau virtuel, sans nécessiter de routeur.
+Les deux machines sont ainsi connectées au même réseau virtuel isolé, sans nécessiter de routeur pour communiquer entre elles.
 
 ## 5. Résultat
 
-Le réseau **SERVER-TO-COMPTA** est créé et les deux machines virtuelles y sont connectées.
+Le réseau **SERVER-TO-COMPTA** est créé, avec le service DHCP de libvirt désactivé.
 
-Cette configuration permet de disposer d'un environnement réseau isolé, dans lequel l'attribution des adresses IP peut être assurée par le service DHCP de Windows Server 2022.
+Les deux machines virtuelles y sont connectées.
 
-La validation de l'attribution DHCP sera présentée dans l'étape suivante.
+Cette configuration permet d'utiliser le **serveur DHCP Windows** pour distribuer les adresses IP aux clients de ce réseau, sans passer par le DHCP du réseau par défaut de libvirt.
+
+La vérification de l'attribution DHCP sera présentée dans l'étape suivante.
 
 *Capture d'écran de la configuration du réseau SERVER-TO-COMPTA dans Virt-Manager à ajouter.*
 
@@ -69,9 +79,11 @@ La validation de l'attribution DHCP sera présentée dans l'étape suivante.
 
 Cette difficulté m'a permis de mieux comprendre :
 
-- La différence entre **l'adressage IP d'une machine** et la **configuration d'un réseau virtuel**.
-- La présence possible de services réseau déjà actifs, comme le DHCP de libvirt.
-- L'importance de vérifier l'environnement réseau lors d'un problème de communication entre VM.
+- La différence entre **la configuration IP d'une machine** et celle du **réseau virtuel** auquel elle est connectée.
+- Le fonctionnement du réseau par défaut de **KVM/libvirt**, notamment son service DHCP.
+- L'importance d'identifier quel serveur DHCP attribue réellement les adresses IP.
+
+J'ai surtout compris qu'installer un service DHCP ne suffit pas : **les machines doivent également être connectées à un réseau permettant de l'utiliser**.
 
 ---
 
