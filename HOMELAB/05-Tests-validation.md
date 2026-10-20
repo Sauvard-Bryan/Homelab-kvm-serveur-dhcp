@@ -33,6 +33,7 @@ Pour contrôler l'ensemble des informations réseau :
 ```cmd
 ipconfig /all
 ```
+![Test DHCP - Release et Renew](../IMAGES/IPCONFIG-RELEASE-RENEW.png)
 
 Vérification des paramètres suivants :
 
