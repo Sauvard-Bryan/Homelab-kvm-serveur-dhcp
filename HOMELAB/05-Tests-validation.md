@@ -30,13 +30,9 @@ L'objectif était de forcer une nouvelle attribution afin de ne pas se fier à u
 
 ### Vérification de l'adresse attribuée
 
-Exécution de la commande :
+Pour rappel, **COMPTA-DEVICE1** doit recevoir une configuration IP correspondant à l'étendue DHCP créée sur **SERVER-DHCP**.
 
-```cmd
-ipconfig /all
-```
-
-Vérification des paramètres suivants :
+La configuration attendue est donc la suivante :
 
 | Paramètre | Configuration attendue |
 |-----------|------------------------|
@@ -46,9 +42,13 @@ Vérification des paramètres suivants :
 | Serveur DHCP | 192.168.1.1 |
 | Passerelle | Non configurée |
 
-Le client reçoit bien une adresse appartenant à l'étendue DHCP configurée.
+Pour vérifier ces informations, exécution de la commande :
 
-**Aucune adresse APIPA (`169.254.x.x`) n'est présente sur l'interface testée**, ce qui est cohérent avec une attribution DHCP réussie. Le champ **Serveur DHCP** permet de confirmer que l'adresse provient bien de `SERVER-DHCP`.
+```cmd
+ipconfig /all
+```
+
+**Résultat :** la configuration obtenue correspond à celle attendue. Le poste client reçoit bien une adresse appartenant à l'étendue DHCP, distribuée par `SERVER-DHCP`.
 
 ![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIGALL.png)
 
