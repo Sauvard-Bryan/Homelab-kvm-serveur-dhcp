@@ -26,6 +26,8 @@ L'objectif était de forcer une nouvelle attribution, afin de vérifier que l'ad
 
 **Résultat :** renouvellement effectué avec succès.
 
+![Test DHCP - Release et Renew](../IMAGES/IPCONFIG-RELEASE-RENEW.png)
+
 ## 2. Vérification de la configuration IP
 
 Pour contrôler l'ensemble des informations réseau :
@@ -33,7 +35,6 @@ Pour contrôler l'ensemble des informations réseau :
 ```cmd
 ipconfig /all
 ```
-![Test DHCP - Release et Renew](../IMAGES/IPCONFIG-RELEASE-RENEW.png)
 
 Vérification des paramètres suivants :
 
