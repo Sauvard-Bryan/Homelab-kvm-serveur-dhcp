@@ -8,7 +8,7 @@ Vérifier le bon fonctionnement du **serveur DHCP** et la communication entre le
 - **SERVER-DHCP :** Windows Server 2022
 - **COMPTA-DEVICE1 :** Windows 11
 
-## 1. Test DHCP depuis le client
+## 1. Test et vérification du DHCP côté client
 
 Une fois les deux VM installées et le réseau configuré, lancement des premiers tests sur **COMPTA-DEVICE1**.
 
@@ -22,15 +22,15 @@ ipconfig /renew
 - **`ipconfig /release` :** libère le bail DHCP actuel.
 - **`ipconfig /renew` :** demande une nouvelle configuration IP au serveur DHCP.
 
-L'objectif était de forcer une nouvelle attribution, afin de vérifier que l'adresse IP provenait bien du serveur DHCP configuré.
+L'objectif était de forcer une nouvelle attribution afin de ne pas se fier à une adresse IP déjà obtenue auparavant.
 
 **Résultat :** renouvellement effectué avec succès.
 
 ![Test DHCP - Release et Renew](../IMAGES/IPCONFIG-RELEASE-RENEW.png)
 
-## 2. Vérification de la configuration IP
+### Vérification de l'adresse attribuée
 
-Pour contrôler l'ensemble des informations réseau :
+Exécution de la commande :
 
 ```cmd
 ipconfig /all
@@ -46,11 +46,13 @@ Vérification des paramètres suivants :
 | Serveur DHCP | 192.168.1.1 |
 | Passerelle | Non configurée |
 
-La configuration obtenue correspond à l'étendue créée sur **SERVER-DHCP**.
+Le client reçoit bien une adresse appartenant à l'étendue DHCP configurée.
+
+**Aucune adresse APIPA (`169.254.x.x`) n'est présente sur l'interface testée**, ce qui est cohérent avec une attribution DHCP réussie. Le champ **Serveur DHCP** permet de confirmer que l'adresse provient bien de `SERVER-DHCP`.
 
 ![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIGALL.png)
 
-## 3. Vérification côté serveur
+## 2. Vérification côté serveur
 
 Afin de contrôler également le fonctionnement du DHCP depuis **SERVER-DHCP**, utilisation de PowerShell.
 
@@ -80,7 +82,7 @@ Permet de consulter les adresses attribuées aux machines clientes.
 
 ![Vérification du DHCP avec PowerShell](../IMAGES/POWERSELL-DHCP.png)
 
-## 4. Test de connectivité
+## 3. Test de connectivité
 
 Depuis **COMPTA-DEVICE1**, lancement d'un test de communication avec le serveur :
 
@@ -131,7 +133,7 @@ Le problème provenait du filtrage ICMPv4 par le pare-feu Windows Server.
 
 ![Test de connectivité réussi](../IMAGES/PING-192.168.1.1.png)
 
-## 5. Résultat final
+## 4. Résultat final
 
 La première infrastructure réseau est **fonctionnelle**.
 
@@ -144,7 +146,7 @@ La première infrastructure réseau est **fonctionnelle**.
 | Communication client / serveur | ✅ Validé |
 | Résolution du blocage ICMPv4 | ✅ Validé |
 
-## 6. Ce que j'ai appris
+## 5. Ce que j'ai appris
 
 Cette étape m'a permis de découvrir une nouvelle dimension du diagnostic réseau : **un service peut fonctionner correctement alors qu'un autre type de communication est bloqué**.
 
