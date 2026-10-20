@@ -3,35 +3,36 @@
 
 ## Objectif
 
-Vérifier le bon fonctionnement du **serveur DHCP** et la communication réseau entre les deux machines virtuelles :
+Vérifier le fonctionnement du **serveur DHCP** et la communication entre les deux machines virtuelles :
 
 - **SERVER-DHCP :** Windows Server 2022
 - **COMPTA-DEVICE1 :** Windows 11
 
 ## 1. Vérification de l'attribution DHCP
 
-Sur **COMPTA-DEVICE1**, configuration de la carte réseau pour obtenir automatiquement une adresse IPv4.
+Sur **COMPTA-DEVICE1**, configuration de la carte réseau pour obtenir automatiquement une adresse IP.
 
-Ouverture du terminal Windows et exécution des commandes :
+Exécution des commandes :
 
 ```cmd
 ipconfig /release
 ipconfig /renew
 ```
 
-Ces commandes permettent de libérer l'adresse IP actuelle, puis de demander une nouvelle configuration au serveur DHCP.
+- `ipconfig /release` : libère l'adresse IP actuelle.
+- `ipconfig /renew` : demande une nouvelle configuration au serveur DHCP.
 
-**Résultat :** le client obtient correctement une adresse IP depuis le serveur Windows.
+**Résultat :** le client reçoit automatiquement une adresse IP depuis SERVER-DHCP.
 
 ## 2. Vérification de la configuration IP
 
-Exécution de la commande :
+Sur le poste client :
 
 ```cmd
 ipconfig /all
 ```
 
-Vérification des informations reçues :
+Vérification des paramètres réseau :
 
 | Paramètre | Résultat attendu |
 |-----------|------------------|
@@ -41,13 +42,55 @@ Vérification des informations reçues :
 | Serveur DHCP | 192.168.1.1 |
 | Passerelle | Non configurée |
 
-Le poste client reçoit une adresse appartenant à l'étendue configurée sur **SERVER-DHCP**.
+Le poste client reçoit une adresse appartenant à l'étendue configurée sur le serveur Windows.
 
-*Capture d'écran du résultat de `ipconfig /all` à ajouter.*
+*Capture d'écran de `ipconfig /all` à ajouter.*
 
-## 3. Test de connectivité
+## 3. Vérification côté serveur DHCP
 
-Depuis **COMPTA-DEVICE1**, lancement d'un test de communication vers le serveur :
+Sur **SERVER-DHCP**, ouverture de PowerShell en administrateur.
+
+### Vérification du service DHCP
+
+```powershell
+Get-Service DHCPServer
+```
+
+Cette commande permet de vérifier l'état du service DHCP.
+
+**Résultat attendu :** `Running`.
+
+### Vérification de l'étendue DHCP
+
+```powershell
+Get-DhcpServerv4Scope
+```
+
+Cette commande permet d'afficher les étendues IPv4 configurées sur le serveur.
+
+Vérification des éléments suivants :
+
+- **ScopeId :** 192.168.1.0
+- **StartRange :** 192.168.1.2
+- **EndRange :** 192.168.1.4
+- **SubnetMask :** 255.255.255.0
+- **State :** Active
+
+### Vérification des baux DHCP
+
+```powershell
+Get-DhcpServerv4Lease -ScopeId 192.168.1.0
+```
+
+Cette commande affiche les adresses IP attribuées aux clients.
+
+L'objectif est de retrouver l'adresse attribuée à **COMPTA-DEVICE1**.
+
+*Capture d'écran du résultat PowerShell à ajouter.*
+
+## 4. Test de connectivité
+
+Depuis **COMPTA-DEVICE1**, test de communication avec le serveur :
 
 ```cmd
 ping 192.168.1.1
@@ -80,7 +123,7 @@ Puis :
 
 1. Accès aux **règles de trafic entrant**.
 2. Recherche de la règle **Demande d'écho - Trafic entrant ICMPv4**.
-3. Activation de la règle pour autoriser les requêtes ping.
+3. Activation de la règle permettant les requêtes ping.
 
 ### Vérification après correction
 
@@ -96,37 +139,28 @@ Le problème provenait donc du filtrage ICMPv4 par le pare-feu Windows Server.
 
 *Capture d'écran du ping réussi à ajouter.*
 
-## 4. Vérification côté serveur DHCP
-
-Depuis la console DHCP de Windows Server 2022 :
-
-- Vérification de l'activation de l'étendue `192.168.1.2` à `192.168.1.4`.
-- Consultation des **baux d'adresses**.
-- Vérification de l'adresse attribuée au poste client.
-
-Cette vérification permet de confirmer que le serveur Windows assure bien l'attribution des adresses IP.
-
 ## 5. Résultat final
 
 La première infrastructure réseau est **opérationnelle**.
 
 | Test | Résultat |
 |------|----------|
+| Service DHCP actif | À vérifier avec PowerShell |
+| Étendue DHCP configurée | ✅ Validé |
 | Attribution automatique DHCP | ✅ Validé |
 | Renouvellement du bail DHCP | ✅ Validé |
-| Adresse IP dans l'étendue prévue | ✅ Validé |
-| Communication entre les VM (ping) | ✅ Validé |
+| Vérification des baux côté serveur | À vérifier avec PowerShell |
+| Communication entre les VM | ✅ Validé |
 | Correction du problème ICMPv4 | ✅ Validé |
 
 ## 6. Ce que j'ai appris
 
-Cette étape m'a permis de comprendre qu'un **service DHCP fonctionnel ne garantit pas que toutes les communications réseau sont autorisées**.
+Cette étape m'a permis de comprendre :
 
-J'ai notamment découvert que :
-
-- Le **DHCP** utilise UDP, tandis que le **ping** utilise ICMP.
-- Le pare-feu peut bloquer un protocole sans empêcher les autres services de fonctionner.
-- Une règle de pare-feu peut être adaptée sans désactiver entièrement la protection.
+- La différence entre la **configuration réseau du client** et la **gestion des baux côté serveur**.
+- L'utilisation de **PowerShell** pour contrôler les services et les paramètres DHCP.
+- La différence entre les protocoles **UDP (DHCP)** et **ICMP (ping)**.
+- Le rôle du **pare-feu Windows** dans le filtrage des communications.
 
 Cette découverte m'a également amené à m'interroger sur les bonnes pratiques de filtrage réseau.
 
@@ -134,11 +168,9 @@ Une étape de **sécurisation de l'infrastructure** sera ajoutée après la mise
 
 ## 7. Prochaine évolution
 
-Après validation de cette première infrastructure :
-
 - Ajout d'une **deuxième VM cliente** sur un autre sous-réseau.
 - Création d'une **VM routeur** pour relier les réseaux.
-- Configuration d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
+- Mise en place d'un **relais DHCP** pour distribuer les adresses IP sur plusieurs sous-réseaux.
 
 ---
 
