@@ -24,7 +24,7 @@ Création d'une nouvelle étendue depuis la console DHCP.
 | Réseau | 192.168.1.0/24 |
 | Adresse de début | 192.168.1.2 |
 | Adresse de fin | 192.168.1.4 |
-| Masque | 255.255.255.0 |
+| Masque de sous-réseau | 255.255.255.0 |
 | Durée du bail | 8 jours |
 | Passerelle | Non configurée |
 
@@ -52,7 +52,7 @@ ncpa.cpl
 | Paramètre | Configuration |
 |-----------|---------------|
 | Adresse IPv4 | 192.168.1.1 |
-| Masque | 255.255.255.0 |
+| Masque de sous-réseau | 255.255.255.0 |
 | Passerelle | Non configurée |
 | DNS préféré | 192.168.1.1 |
 
@@ -60,43 +60,95 @@ L'adresse `192.168.1.1` a été choisie pour placer le serveur dans le même sou
 
 ## 4. Vérification de la configuration
 
-Ouverture du terminal Windows et exécution de la commande :
+Depuis **SERVER-DHCP**, ouverture de l'invite de commandes et exécution de :
 
 ```cmd
 ipconfig
 ```
 
-Cette commande a permis de vérifier que le serveur utilisait bien l'adresse IPv4 statique `192.168.1.1` et le masque `255.255.255.0`.
+Cette commande m'a permis de vérifier que le serveur utilisait bien l'adresse IPv4 fixe `192.168.1.1` et le masque de sous-réseau `255.255.255.0`.
 
-Vérification également de l'activation de l'étendue depuis la console DHCP.
+![Configuration IP du serveur DHCP](../IMAGES/IPCONFIG.png)
+
+J'ai également vérifié que l'étendue DHCP était activée depuis la console DHCP.
 
 ## 5. Premiers tests et difficultés
 
-Après la configuration du serveur, j'ai effectué un premier test depuis **COMPTA-DEVICE1**, configuré pour obtenir automatiquement son adresse IP.
+Après la configuration du serveur, j'ai effectué un premier test depuis **COMPTA-DEVICE1**.
 
-Commande utilisée :
+L'objectif était de vérifier que le client obtenait automatiquement une adresse IP appartenant à l'étendue configurée sur **SERVER-DHCP**.
+
+La configuration attendue était la suivante :
+
+| Paramètre | Configuration attendue |
+|-----------|------------------------|
+| Adresse IPv4 | 192.168.1.2 à 192.168.1.4 |
+| Masque de sous-réseau | 255.255.255.0 |
+| Serveur DHCP | 192.168.1.1 |
+| Passerelle | Non configurée |
+
+### Premier renouvellement DHCP
+
+Depuis l'invite de commandes du client, j'ai exécuté :
 
 ```cmd
 ipconfig /renew
 ```
 
-**Résultat : échec de l'attribution d'une adresse IP**, avec une erreur de dépassement du délai d'attente.
+**Résultat :** le client obtient bien une adresse IP, mais celle-ci ne correspond pas à la plage configurée sur mon serveur.
 
-Malgré l'installation du service DHCP et l'activation de l'étendue, le poste client ne parvenait pas à obtenir sa configuration réseau.
+L'adresse attribuée est `192.168.122.170`, avec une passerelle `192.168.122.1`.
 
-Les investigations m'ont amené à examiner la configuration du réseau virtuel sous **KVM/libvirt**, notamment la présence du DHCP automatique sur le réseau par défaut.
+![Premier renouvellement DHCP du client](../IMAGES/IPCONFIG-RENEW.png)
 
-Ce problème sera traité dans l'étape suivante : **création d'un réseau virtuel isolé**.
+### Identification du serveur DHCP
+
+Pour comprendre d'où provenait cette adresse, j'ai utilisé :
+
+```cmd
+ipconfig /all
+```
+
+Cette commande permet notamment de consulter l'adresse du serveur DHCP ayant attribué la configuration réseau.
+
+La capture confirme les informations suivantes :
+
+| Paramètre | Résultat obtenu |
+|-----------|-----------------|
+| DHCP activé | Oui |
+| Adresse IPv4 | 192.168.122.170 |
+| Masque de sous-réseau | 255.255.255.0 |
+| Serveur DHCP | 192.168.122.1 |
+| Passerelle | 192.168.122.1 |
+
+![Identification du serveur DHCP](../IMAGES/IPCONFIG-ALL.png)
+
+Le client reçoit donc bien une configuration par DHCP, **mais pas depuis SERVER-DHCP (`192.168.1.1`)**.
+
+### Recherche du problème
+
+En poursuivant mes recherches sur la configuration réseau de **KVM/libvirt**, j'ai découvert que son réseau virtuel par défaut disposait de son propre service DHCP.
+
+Ce réseau utilise généralement la plage `192.168.122.0/24`, ce qui correspond à la configuration reçue par mon client.
+
+J'ai alors compris que la configuration du DHCP sous Windows Server ne suffisait pas : il fallait également prendre en compte **le réseau virtuel auquel les machines étaient connectées**.
+
+Pour que **SERVER-DHCP** puisse distribuer les adresses IP souhaitées, j'ai décidé de revoir cette configuration.
+
+La création d'un réseau virtuel isolé sera présentée dans l'étape suivante.
 
 ## 6. Résultat de cette étape
 
 - Rôles **DHCP et DNS** installés sur Windows Server 2022.
-- Adresse IPv4 statique `192.168.1.1/24` configurée.
+- Adresse IPv4 fixe `192.168.1.1/24` configurée.
 - Étendue DHCP `192.168.1.2` à `192.168.1.4` créée et activée.
 - Configuration IP du serveur vérifiée.
-- Attribution DHCP au poste client **non fonctionnelle à ce stade**.
+- Premier test DHCP effectué depuis le client.
+- Identification d'un autre serveur DHCP (`192.168.122.1`) attribuant les adresses IP.
 
-La prochaine étape consistera à corriger la configuration du réseau virtuel pour permettre la communication entre les deux machines.
+Le serveur Windows est configuré, mais **l'attribution DHCP depuis SERVER-DHCP n'est pas encore validée**.
+
+La prochaine étape consistera à créer un réseau isolé sous KVM/libvirt pour que le client puisse obtenir sa configuration IP depuis le serveur Windows.
 
 ---
 
