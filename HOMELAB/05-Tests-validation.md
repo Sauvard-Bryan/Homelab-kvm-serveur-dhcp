@@ -43,7 +43,7 @@ Vérification des informations reçues :
 
 Le poste client reçoit une adresse appartenant à l'étendue configurée sur **SERVER-DHCP**.
 
-*Capture d'écran du résultat de `ipconfig /all`.*
+*Capture d'écran du résultat de `ipconfig /all` à ajouter.*
 
 ## 3. Test de connectivité
 
@@ -53,27 +53,34 @@ Depuis **COMPTA-DEVICE1**, lancement d'un test de communication vers le serveur 
 ping 192.168.1.1
 ```
 
-**Résultat initial : échec du ping**, malgré le bon fonctionnement du service DHCP.
+**Résultat initial : échec du ping**, malgré le bon fonctionnement du DHCP.
 
-### Problème rencontré : pare-feu Windows
+### Problème rencontré
 
-Après vérification, le problème provenait du **pare-feu Windows Server**, qui bloquait les requêtes ICMPv4 entrantes.
+Face à cet échec, j'ai commencé par vérifier les éléments que je connaissais :
 
-Le DHCP fonctionnait car il utilise le protocole **UDP**, tandis que le ping utilise **ICMP**.
+- L'adresse IP attribuée au client.
+- L'adresse IP fixe du serveur.
+- Le fonctionnement du service DHCP.
+- La configuration IP du serveur avec `ipconfig`.
 
-### Solution appliquée
+Toutes ces vérifications étant correctes, j'ai supposé que le problème pouvait provenir d'un élément que je ne connaissais pas encore.
 
-Sur **SERVER-DHCP** :
+### Recherche et résolution
 
-1. Ouverture du pare-feu avancé avec :
+Après des recherches et avec l'aide de l'IA, j'ai découvert que le **pare-feu Windows Server** pouvait bloquer les requêtes **ICMPv4**, utilisées par la commande `ping`.
+
+Sur **SERVER-DHCP**, ouverture de la configuration avancée du pare-feu :
 
 ```cmd
 wf.msc
 ```
 
-2. Accès aux **règles de trafic entrant**.
-3. Recherche de la règle **Demande d'écho - Trafic entrant ICMPv4**.
-4. Activation de la règle pour autoriser les requêtes ping.
+Puis :
+
+1. Accès aux **règles de trafic entrant**.
+2. Recherche de la règle **Demande d'écho - Trafic entrant ICMPv4**.
+3. Activation de la règle pour autoriser les requêtes ping.
 
 ### Vérification après correction
 
@@ -85,9 +92,9 @@ ping 192.168.1.1
 
 **Résultat : ping réussi.**
 
-La communication entre les deux machines est confirmée.
+Le problème provenait donc du filtrage ICMPv4 par le pare-feu Windows Server.
 
-*Capture d'écran du ping réussi.*
+*Capture d'écran du ping réussi à ajouter.*
 
 ## 4. Vérification côté serveur DHCP
 
@@ -117,11 +124,13 @@ Cette étape m'a permis de comprendre qu'un **service DHCP fonctionnel ne garant
 
 J'ai notamment découvert que :
 
-- Le **DHCP** et le **ping** utilisent des protocoles différents.
-- Le pare-feu Windows peut bloquer certaines communications sans empêcher le fonctionnement des autres services.
+- Le **DHCP** utilise UDP, tandis que le **ping** utilise ICMP.
+- Le pare-feu peut bloquer un protocole sans empêcher les autres services de fonctionner.
 - Une règle de pare-feu peut être adaptée sans désactiver entièrement la protection.
 
-Cette découverte m'a également amené à m'interroger sur les bonnes pratiques de filtrage réseau. Une étape de **sécurisation de l'infrastructure** sera donc ajoutée après la mise en place complète du homelab.
+Cette découverte m'a également amené à m'interroger sur les bonnes pratiques de filtrage réseau.
+
+Une étape de **sécurisation de l'infrastructure** sera ajoutée après la mise en place complète du homelab.
 
 ## 7. Prochaine évolution
 
@@ -133,4 +142,4 @@ Après validation de cette première infrastructure :
 
 ---
 
-<sub>**Ressources :** Connaissances personnelles en réseau, tutoriels YouTube et utilisation de l'intelligence artificielle pour accompagner les tests, comprendre les protocoles et résoudre les difficultés rencontrées.</sub>
+<sub>**Ressources :** Connaissances personnelles en réseau, tutoriels YouTube et utilisation de l'intelligence artificielle pour accompagner les tests, approfondir les notions techniques et résoudre les difficultés rencontrées.</sub>
