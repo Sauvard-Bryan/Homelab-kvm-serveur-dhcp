@@ -42,7 +42,7 @@ Vérification des paramètres suivants :
 |-----------|------------------------|
 | DHCP activé | Oui |
 | Adresse IPv4 | 192.168.1.2 à 192.168.1.4 |
-| Masque | 255.255.255.0 |
+| Masque de sous-réseau | 255.255.255.0 (/24) |
 | Serveur DHCP | 192.168.1.1 |
 | Passerelle | Non configurée |
 
