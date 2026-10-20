@@ -44,7 +44,7 @@ Vérification des paramètres réseau :
 
 Le poste client reçoit une adresse appartenant à l'étendue configurée sur le serveur Windows.
 
-*Capture d'écran de `ipconfig /all` à ajouter.*
+![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIG.png)
 
 ## 3. Vérification côté serveur DHCP
 
@@ -56,9 +56,7 @@ Sur **SERVER-DHCP**, ouverture de PowerShell en administrateur.
 Get-Service DHCPServer
 ```
 
-Cette commande permet de vérifier l'état du service DHCP.
-
-**Résultat attendu :** `Running`.
+Cette commande permet de vérifier que le service DHCP est en cours d'exécution (`Running`).
 
 ### Vérification de l'étendue DHCP
 
@@ -66,9 +64,7 @@ Cette commande permet de vérifier l'état du service DHCP.
 Get-DhcpServerv4Scope
 ```
 
-Cette commande permet d'afficher les étendues IPv4 configurées sur le serveur.
-
-Vérification des éléments suivants :
+Vérification des paramètres :
 
 - **ScopeId :** 192.168.1.0
 - **StartRange :** 192.168.1.2
@@ -82,11 +78,9 @@ Vérification des éléments suivants :
 Get-DhcpServerv4Lease -ScopeId 192.168.1.0
 ```
 
-Cette commande affiche les adresses IP attribuées aux clients.
+Cette commande permet de consulter les adresses IP attribuées aux machines clientes.
 
-L'objectif est de retrouver l'adresse attribuée à **COMPTA-DEVICE1**.
-
-*Capture d'écran du résultat PowerShell à ajouter.*
+![Vérification DHCP avec PowerShell](../IMAGES/DHCP-POWERSELL.png)
 
 ## 4. Test de connectivité
 
@@ -123,7 +117,7 @@ Puis :
 
 1. Accès aux **règles de trafic entrant**.
 2. Recherche de la règle **Demande d'écho - Trafic entrant ICMPv4**.
-3. Activation de la règle permettant les requêtes ping.
+3. Activation de la règle autorisant les requêtes ping.
 
 ### Vérification après correction
 
@@ -137,7 +131,7 @@ ping 192.168.1.1
 
 Le problème provenait donc du filtrage ICMPv4 par le pare-feu Windows Server.
 
-*Capture d'écran du ping réussi à ajouter.*
+![Test de connectivité réussi](../IMAGES/PING%20192.168.1.1.png)
 
 ## 5. Résultat final
 
@@ -145,11 +139,10 @@ La première infrastructure réseau est **opérationnelle**.
 
 | Test | Résultat |
 |------|----------|
-| Service DHCP actif | À vérifier avec PowerShell |
+| Service DHCP fonctionnel | ✅ Validé |
 | Étendue DHCP configurée | ✅ Validé |
 | Attribution automatique DHCP | ✅ Validé |
 | Renouvellement du bail DHCP | ✅ Validé |
-| Vérification des baux côté serveur | À vérifier avec PowerShell |
 | Communication entre les VM | ✅ Validé |
 | Correction du problème ICMPv4 | ✅ Validé |
 
@@ -157,10 +150,10 @@ La première infrastructure réseau est **opérationnelle**.
 
 Cette étape m'a permis de comprendre :
 
-- La différence entre la **configuration réseau du client** et la **gestion des baux côté serveur**.
 - L'utilisation de **PowerShell** pour contrôler les services et les paramètres DHCP.
 - La différence entre les protocoles **UDP (DHCP)** et **ICMP (ping)**.
 - Le rôle du **pare-feu Windows** dans le filtrage des communications.
+- L'importance de vérifier plusieurs éléments avant de rechercher une nouvelle cause à un problème.
 
 Cette découverte m'a également amené à m'interroger sur les bonnes pratiques de filtrage réseau.
 
