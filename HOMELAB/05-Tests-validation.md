@@ -12,7 +12,7 @@ Valider le fonctionnement du **serveur DHCP** et la communication entre les deux
 
 Après avoir corrigé la configuration du réseau virtuel, j'ai repris les tests depuis **COMPTA-DEVICE1**.
 
-Pour vérifier que le client pouvait obtenir une nouvelle adresse IP depuis le serveur DHCP, j'ai utilisé les commandes suivantes :
+Pour vérifier que le client pouvait obtenir une nouvelle adresse IP depuis mon serveur DHCP, j'ai utilisé les commandes suivantes :
 
 ```cmd
 ipconfig /release
@@ -24,7 +24,7 @@ ipconfig /renew
 
 J'ai volontairement utilisé ces deux commandes afin de ne pas simplement me fier à une adresse IP qui aurait déjà été attribuée au client.
 
-**Résultat :** contrairement aux premiers tests, le renouvellement DHCP fonctionne désormais.
+**Résultat :** le client obtient une nouvelle adresse IP. Il reste à vérifier qu'elle provient bien de **SERVER-DHCP**, contrairement au premier test où elle était attribuée par le DHCP de libvirt.
 
 ![Test DHCP - Release et Renew](../IMAGES/IPCONFIG-RELEASE-RENEW.png)
 
@@ -50,7 +50,7 @@ ipconfig /all
 
 **Résultat :** l'adresse IPv4 appartient bien à la plage prévue et le serveur DHCP indiqué est `192.168.1.1`.
 
-Cela confirme que **COMPTA-DEVICE1** reçoit sa configuration IP depuis **SERVER-DHCP**.
+Cela confirme que **COMPTA-DEVICE1** reçoit désormais sa configuration IP depuis **SERVER-DHCP**, et non depuis le DHCP de libvirt.
 
 ![Configuration IP du client](../IMAGES/DEVICE1-IPCONFIGALL.png)
 
