@@ -3,154 +3,188 @@
 
 ## Objectif
 
-Après avoir réussi à mettre en place mon premier serveur DHCP sous **Windows Server 2022**, et validé son fonctionnement avec un poste client **Windows 11**, j'ai voulu aller plus loin.
+Après avoir réussi à configurer mon premier serveur DHCP sous **Windows Server 2022** et validé son fonctionnement avec un poste client Windows 11, j'ai voulu aller plus loin.
 
-Jusqu'ici, mon infrastructure comportait **un serveur DHCP et un seul poste client**, connectés au même réseau virtuel isolé.
+Jusqu'ici, mon infrastructure était composée de deux machines virtuelles, **SERVER-DHCP** et **COMPTA-DEVICE1**, connectées au même réseau virtuel isolé.
 
-Je me suis alors posé une nouvelle question :
+Je me suis alors posé une nouvelle question : **si je voulais ajouter un deuxième poste client, mais sur un réseau différent du premier, comment les deux machines pourraient-elles recevoir leurs adresses IP depuis le même serveur DHCP ?**
 
-**Si je voulais ajouter un deuxième poste client, mais le placer sur un réseau différent du premier, comment les deux machines pourraient-elles obtenir une adresse IP depuis le même serveur DHCP ?**
+Après quelques recherches, j'ai découvert les notions de **routage** et de **relais DHCP**.
 
-En me renseignant sur cette possibilité, j'ai découvert les notions de **sous-réseaux, de routage et de relais DHCP**.
+J'ai donc décidé de faire évoluer mon infrastructure existante, en conservant mon serveur Windows et en ajoutant un routeur pour relier plusieurs réseaux.
 
-Je n'avais encore jamais installé ni configuré de routeur.
+## 1. Nouvelle architecture réseau
 
-J'ai donc décidé de faire évoluer mon infrastructure existante vers une architecture composée de **trois réseaux distincts**, reliés par un routeur **OPNsense**.
+Dans les étapes précédentes, le serveur DHCP et le poste client communiquaient directement sur le réseau `192.168.1.0/24`.
 
-L'objectif était de conserver un seul serveur DHCP Windows, capable de distribuer des adresses IP aux postes des réseaux **Comptabilité** et **Commercial**.
-
-Pour valider cette nouvelle configuration, j'ai utilisé ma VM Windows 11 existante en la connectant successivement aux deux réseaux.
-
-## 1. Évolution de l'architecture réseau
-
-Dans les chapitres précédents, **SERVER-DHCP** et **COMPTA-DEVICE1** étaient connectés au même réseau isolé.
-
-Le serveur distribuait des adresses IP sur le réseau `192.168.1.0/24`.
-
-Pour ajouter un deuxième réseau, j'ai décidé de revoir cette organisation.
-
-### Nouvelle architecture
+Pour aller plus loin, j'ai choisi de séparer les machines en trois réseaux distincts :
 
 | Réseau | Sous-réseau | Utilisation |
 |--------|-------------|-------------|
-| Serveur | `192.168.1.0/24` | Communication entre Windows Server et OPNsense |
-| Comptabilité | `192.168.2.0/24` | Postes du service Comptabilité |
-| Commercial | `192.168.3.0/24` | Postes du service Commercial |
+| Serveur | `192.168.1.0/24` | Serveur DHCP et routeur |
+| Comptabilité | `192.168.2.0/24` | Postes Comptabilité |
+| Commercial | `192.168.3.0/24` | Postes Commercial |
 
-Le réseau `192.168.1.0/24` est désormais réservé au serveur et à l'interface LAN d'OPNsense.
+Le serveur DHCP conserve son adresse fixe `192.168.1.1`.
 
-Les postes clients sont placés sur les réseaux `192.168.2.0/24` et `192.168.3.0/24`.
+En revanche, les postes clients ne seront plus directement connectés à son réseau. Ils utiliseront désormais les réseaux Comptabilité et Commercial.
 
-OPNsense possède une interface sur chacun de ces réseaux afin de permettre leur interconnexion.
+Pour permettre au serveur DHCP de fonctionner avec ces différents réseaux, j'ai prévu d'ajouter une machine virtuelle dédiée au routage.
 
-*Capture à ajouter : schéma de l'architecture finale avec SERVER-DHCP, OPNsense et les deux réseaux clients.*
+*Capture à ajouter : schéma de la nouvelle architecture, avec SERVER-DHCP, OPNsense et les deux réseaux clients. Indiquer les adresses IP des interfaces du routeur.*
 
 ## 2. Création de la VM OPNsense
 
-Pour relier les différents réseaux, j'ai créé une nouvelle machine virtuelle dans **Virt-Manager**.
+Pour relier mes différents réseaux, je devais maintenant installer mon premier routeur.
 
-### Système utilisé
+Après quelques recherches, j'ai choisi **OPNsense**, une solution gratuite et open source qui me semblait adaptée à mon projet, notamment grâce à son interface web et à la possibilité de configurer un relais DHCP.
 
-- **Nom de la VM :** ROUTAGE
-- **Système :** OPNsense
-- **Virtualisation :** KVM/QEMU
-- **Gestion :** Virt-Manager
+Depuis **Virt-Manager**, j'ai donc créé une nouvelle machine virtuelle, nommée **ROUTAGE**, à partir de l'image d'installation d'OPNsense.
 
-OPNsense est une solution de routage et de pare-feu basée sur FreeBSD.
+### Configuration de la VM
 
-Dans ce projet, je l'utilise principalement pour assurer le **routage entre les réseaux** et le **relais DHCP**.
+| Paramètre | Configuration |
+|-----------|---------------|
+| Nom | ROUTAGE |
+| Système | OPNsense |
+| RAM | À compléter |
+| CPU | À compléter |
+| Stockage | À compléter |
 
-Après avoir créé la VM à partir de l'image d'installation d'OPNsense, j'ai procédé à l'installation du système.
+Les ressources ont été adaptées aux capacités de mon PC hôte, qui dispose de 8 Go de RAM et fait déjà fonctionner les deux VM Windows du projet.
 
-*Capture à ajouter : VM ROUTAGE dans Virt-Manager.*
+Après la création de la machine virtuelle, j'ai procédé à l'installation d'OPNsense.
 
-## 3. Création des réseaux isolés sous KVM
+*Capture à ajouter : VM ROUTAGE dans Virt-Manager, avec ses ressources matérielles.*
 
-Pour séparer les différents services, j'ai créé des réseaux virtuels isolés depuis **Virt-Manager**.
+## 3. Première configuration d'OPNsense
+
+Après l'installation, j'ai découvert la console d'administration d'OPNsense.
+
+Pour commencer, il fallait configurer son interface réseau principale afin qu'elle puisse communiquer avec mon serveur Windows.
+
+J'ai utilisé le réseau `192.168.1.0/24`, déjà présent dans mon infrastructure.
+
+### Configuration initiale
+
+Depuis la console OPNsense, j'ai configuré l'interface LAN avec une adresse IPv4 fixe :
+
+| Paramètre | Configuration |
+|-----------|---------------|
+| Interface | LAN |
+| Adresse IPv4 | `192.168.1.254` |
+| Masque | `255.255.255.0` |
+| Réseau | `192.168.1.0/24` |
+
+J'ai choisi `192.168.1.254` pour disposer d'une adresse de routeur sur le même réseau que **SERVER-DHCP (`192.168.1.1`)**, sans créer de conflit d'adressage.
+
+Cette première configuration permettra ensuite d'accéder à l'interface web d'OPNsense depuis Windows Server.
+
+*Capture à ajouter : console OPNsense montrant l'adresse LAN `192.168.1.254/24`.*
+
+## 4. Création des réseaux virtuels sous KVM
+
+Dans la première version du projet, j'avais créé un réseau isolé pour relier SERVER-DHCP et COMPTA-DEVICE1.
+
+Avec la nouvelle architecture, il fallait désormais séparer les futurs postes Comptabilité et Commercial.
+
+Depuis **Virt-Manager**, j'ai donc créé les réseaux virtuels isolés nécessaires.
 
 ### Réseaux utilisés
 
-- Réseau Serveur : réseau initial adapté à la nouvelle architecture.
-- **COMPTABILITE** : réseau destiné aux postes Comptabilité.
-- **COMMERCIAL** : réseau destiné aux postes Commercial.
+| Réseau | Rôle |
+|--------|------|
+| Réseau Serveur | Communication entre SERVER-DHCP et ROUTAGE |
+| COMPTABILITE | Réseau des postes Comptabilité |
+| COMMERCIAL | Réseau des postes Commercial |
 
-L'utilisation de réseaux isolés permet de séparer les machines au niveau du réseau virtuel.
+J'ai également veillé à désactiver le **service DHCP de libvirt** sur les réseaux clients.
 
-Les communications entre ces sous-réseaux doivent alors passer par le routeur OPNsense.
+Lors de la première partie du projet, j'avais déjà rencontré un problème lié au DHCP intégré à KVM : le poste Windows recevait une adresse provenant de libvirt, et non de mon serveur Windows.
 
-### Désactivation du DHCP de libvirt
+Je voulais donc éviter de reproduire cette situation avec les nouveaux réseaux.
 
-Lors de la première partie du projet, j'avais découvert que le réseau virtuel par défaut de KVM/libvirt disposait de son propre serveur DHCP.
+### Ajout des cartes réseau sur ROUTAGE
 
-Pour éviter qu'il attribue des adresses IP à la place de mon serveur Windows, j'ai veillé à **désactiver le DHCP de libvirt** sur les réseaux utilisés pour les clients.
+La VM OPNsense devait maintenant être reliée aux trois réseaux.
 
-L'objectif est que les adresses soient uniquement distribuées par **SERVER-DHCP**.
+Depuis les paramètres matériels de la VM dans Virt-Manager, j'ai ajouté **deux cartes réseau supplémentaires**, pour obtenir trois cartes au total.
 
-### Ajout des cartes réseau sur OPNsense
-
-Pour raccorder OPNsense aux trois réseaux, la VM dispose de **trois cartes réseau au total**.
-
-J'ai donc ajouté deux cartes supplémentaires à celle présente initialement.
-
-| Carte | Interface OPNsense | Réseau associé |
-|-------|--------------------|---------------|
+| Carte réseau | Interface OPNsense | Réseau |
+|--------------|--------------------|--------|
 | Carte 1 | LAN (`vtnet0`) | Serveur |
 | Carte 2 | OPT1 (`vtnet1`) | COMPTABILITE |
 | Carte 3 | OPT2 (`vtnet2`) | COMMERCIAL |
 
-Chaque carte est connectée au réseau virtuel correspondant dans Virt-Manager.
+Chaque carte réseau a ensuite été associée au réseau virtuel correspondant.
 
-*Capture à ajouter : liste des réseaux virtuels isolés dans Virt-Manager.*
+*Capture à ajouter : réseaux virtuels isolés dans Virt-Manager, avec le DHCP de libvirt désactivé.*
 
-*Capture à ajouter : les trois cartes réseau de la VM ROUTAGE et leurs réseaux associés.*
+*Capture à ajouter : les trois cartes réseau de la VM ROUTAGE et les réseaux auxquels elles sont associées.*
 
-## 4. Configuration des interfaces OPNsense
+## 5. Raccordement des VM et configuration des interfaces
 
-Après avoir raccordé les cartes réseau, j'ai configuré leurs adresses IPv4 depuis l'interface d'administration d'OPNsense.
+Une fois les réseaux créés, j'ai vérifié le raccordement des différentes machines virtuelles dans Virt-Manager.
 
-J'ai choisi une configuration **Static IPv4**, afin que les adresses du routeur restent fixes.
+### Association des machines
 
-### Adresses configurées
+| Machine ou interface | Réseau virtuel |
+|----------------------|---------------|
+| SERVER-DHCP | Réseau Serveur |
+| ROUTAGE - LAN | Réseau Serveur |
+| ROUTAGE - OPT1 | COMPTABILITE |
+| ROUTAGE - OPT2 | COMMERCIAL |
+| COMPTA-DEVICE1 | COMPTABILITE |
 
-| Interface | Adresse IPv4 | Masque | Réseau |
-|-----------|--------------|--------|--------|
-| LAN | `192.168.1.254` | `255.255.255.0` | Serveur |
-| OPT1 - COMPTABILITE | `192.168.2.1` | `255.255.255.0` | Comptabilité |
-| OPT2 - COMMERCIAL | `192.168.3.1` | `255.255.255.0` | Commercial |
+Dans les chapitres précédents, COMPTA-DEVICE1 était connecté au même réseau que SERVER-DHCP.
 
-Ces adresses deviennent les **passerelles des différents réseaux**.
+Je l'ai donc déplacé sur **COMPTABILITE** afin de tester le fonctionnement du DHCP depuis un autre sous-réseau.
 
-### Rôle des passerelles
+Pour le réseau Commercial, j'ai prévu d'utiliser cette même VM en modifiant temporairement son réseau virtuel.
 
-Une passerelle permet à une machine de communiquer avec un réseau différent du sien.
+### Configuration des interfaces supplémentaires
 
-Par exemple, un poste Comptabilité ayant reçu l'adresse `192.168.2.2` utilise `192.168.2.1` comme passerelle.
+Après avoir ajouté et raccordé les cartes réseau, j'ai poursuivi la configuration d'OPNsense.
 
-Pour atteindre le serveur DHCP situé sur le réseau `192.168.1.0/24`, les communications passent par OPNsense.
+Depuis le navigateur de SERVER-DHCP, j'ai accédé à son interface web :
 
-Il est donc important que chaque réseau utilise **la passerelle correspondant à son propre sous-réseau**.
+`https://192.168.1.254`
 
-*Capture à ajouter : configuration des interfaces LAN, COMPTABILITE et COMMERCIAL dans OPNsense.*
+J'ai ensuite configuré les interfaces des deux nouveaux réseaux en **Static IPv4**.
 
-## 5. Modification de la configuration DHCP Windows
+| Interface | Adresse IPv4 | Masque |
+|-----------|--------------|--------|
+| LAN | `192.168.1.254` | `255.255.255.0` |
+| COMPTABILITE (OPT1) | `192.168.2.1` | `255.255.255.0` |
+| COMMERCIAL (OPT2) | `192.168.3.1` | `255.255.255.0` |
 
-Dans la première version de mon infrastructure, le serveur DHCP distribuait des adresses sur le réseau `192.168.1.0/24`.
+Chaque réseau possède maintenant sa propre adresse de passerelle.
 
-L'étendue initiale utilisait la plage :
+Ces adresses seront également renseignées dans les options DHCP du serveur Windows afin que les futurs clients reçoivent la passerelle correspondant à leur réseau.
 
-`192.168.1.2` à `192.168.1.4`
+*Capture à ajouter : configuration des interfaces LAN, COMPTABILITE et COMMERCIAL depuis l'interface web d'OPNsense.*
 
-Avec la nouvelle architecture, ce réseau est réservé à la communication entre **SERVER-DHCP** et **OPNsense**.
+*Capture à ajouter : carte réseau de COMPTA-DEVICE1 associée au réseau COMPTABILITE dans Virt-Manager.*
 
-Cette ancienne plage n'est donc plus utilisée pour les postes clients.
+## 6. Adaptation du serveur DHCP Windows
 
-J'ai adapté la configuration du serveur Windows pour prendre en charge les réseaux Comptabilité et Commercial.
+Avec les trois réseaux configurés, je devais maintenant adapter mon serveur DHCP à la nouvelle infrastructure.
 
-### 5.1. Configuration IP du serveur
+Dans la première version du projet, le serveur et le poste client étaient sur le réseau `192.168.1.0/24`.
 
-Le serveur conserve son adresse IPv4 fixe `192.168.1.1`.
+L'étendue DHCP distribuait des adresses comprises entre `192.168.1.2` et `192.168.1.4`.
 
-En revanche, avec l'ajout du routeur, une passerelle est désormais nécessaire pour communiquer avec les autres réseaux.
+Cette configuration avait permis de valider le fonctionnement du DHCP sur un seul réseau.
+
+Avec ma nouvelle organisation, le réseau `192.168.1.0/24` est désormais réservé à SERVER-DHCP et à l'interface LAN d'OPNsense.
+
+Les postes clients doivent recevoir des adresses appartenant aux réseaux Comptabilité ou Commercial.
+
+### 6.1. Modification de l'adresse IP fixe du serveur
+
+SERVER-DHCP conserve son adresse IPv4 fixe `192.168.1.1`.
+
+J'ai cependant ajouté une passerelle à sa configuration pour qu'il puisse communiquer avec les autres réseaux.
 
 | Paramètre | Configuration |
 |-----------|---------------|
@@ -159,23 +193,19 @@ En revanche, avec l'ajout du routeur, une passerelle est désormais nécessaire 
 | Passerelle | `192.168.1.254` |
 | DNS préféré | `192.168.1.1` |
 
-La passerelle `192.168.1.254` correspond à l'interface LAN d'OPNsense, située sur le même réseau que Windows Server.
+La passerelle correspond à l'interface LAN d'OPNsense, située sur le même réseau que le serveur.
 
-### 5.2. Adaptation de l'étendue Serveur
+### 6.2. Adaptation de l'étendue initiale
 
-L'étendue initiale du réseau `192.168.1.0/24` avait été créée lorsque le serveur et le client se trouvaient sur le même réseau.
+L'étendue initiale `192.168.1.0/24` n'est plus utilisée pour mes tests sur les postes clients.
 
-Avec la nouvelle organisation, elle n'est plus destinée à distribuer des adresses aux postes Comptabilité ou Commercial.
+J'ai donc adapté sa configuration à la nouvelle organisation, notamment en renseignant la passerelle `192.168.1.254` dans l'option **003 Routeur**.
 
-La passerelle correspondant au réseau Serveur est maintenant :
+Les deux nouveaux réseaux auront leurs propres étendues DHCP.
 
-`192.168.1.254`
+### 6.3. Création de l'étendue Comptabilité
 
-Dans les options DHCP, cette information correspond à l'option **003 Routeur**.
-
-### 5.3. Création de l'étendue Comptabilité
-
-Depuis la console DHCP de Windows Server, j'ai créé une nouvelle étendue pour les postes Comptabilité.
+Depuis la console DHCP de Windows Server, j'ai créé une nouvelle étendue pour le réseau Comptabilité.
 
 | Paramètre | Configuration |
 |-----------|---------------|
@@ -186,13 +216,13 @@ Depuis la console DHCP de Windows Server, j'ai créé une nouvelle étendue pour
 | Passerelle - Option 003 | `192.168.2.1` |
 | DNS - Option 006 | `192.168.1.1` |
 
-Cette étendue permet de distribuer trois adresses IP sur le réseau Comptabilité.
+Cette étendue permet de distribuer trois adresses IP.
 
-La passerelle correspond à l'interface OPT1 d'OPNsense.
+La passerelle `192.168.2.1` correspond à l'interface Comptabilité d'OPNsense.
 
-### 5.4. Création de l'étendue Commercial
+### 6.4. Création de l'étendue Commercial
 
-J'ai ensuite créé une troisième étendue pour les postes Commercial.
+J'ai ensuite créé une autre étendue pour le réseau Commercial.
 
 | Paramètre | Configuration |
 |-----------|---------------|
@@ -205,104 +235,58 @@ J'ai ensuite créé une troisième étendue pour les postes Commercial.
 
 Cette étendue permet également de distribuer trois adresses IP.
 
-La passerelle correspond cette fois à l'interface OPT2 d'OPNsense.
+Lors de la configuration, j'ai fait attention à attribuer à chaque étendue la passerelle correspondant à son propre réseau, tout en conservant `192.168.1.1` comme serveur DNS.
 
-### 5.5. Comprendre les différentes passerelles
+Les trois réseaux utilisent donc le même serveur Windows pour le DHCP et le DNS, mais disposent de passerelles différentes.
 
-J'ai compris qu'il ne fallait pas simplement renseigner la passerelle du serveur DHCP dans toutes les étendues.
+*Capture à ajouter : console DHCP Windows montrant les étendues et leur état d'activation.*
 
-Chaque client doit recevoir la passerelle de **son propre réseau**.
+*Capture à ajouter : options d'étendue Comptabilité, avec la passerelle et le DNS.*
 
-| Réseau | Passerelle |
-|--------|------------|
-| Serveur | `192.168.1.254` |
-| Comptabilité | `192.168.2.1` |
-| Commercial | `192.168.3.1` |
+*Capture à ajouter : options d'étendue Commercial, avec la passerelle et le DNS.*
 
-En revanche, les trois réseaux peuvent utiliser le même serveur DNS : `192.168.1.1`.
+## 7. Configuration du relais DHCP
 
-Le serveur DHCP reste également unique, même s'il gère plusieurs étendues.
+Il restait maintenant à permettre aux postes Comptabilité et Commercial de recevoir leurs adresses IP depuis SERVER-DHCP, bien qu'ils soient connectés à des réseaux différents.
 
-*Capture à ajouter : console DHCP Windows montrant les étendues configurées.*
+Pour cela, j'ai utilisé le **relais DHCP** d'OPNsense.
 
-*Capture à ajouter : options d'étendue Comptabilité avec la passerelle et le DNS.*
-
-*Capture à ajouter : options d'étendue Commercial avec la passerelle et le DNS.*
-
-## 6. Raccordement des machines aux bons réseaux
-
-Après avoir configuré les réseaux et les interfaces, j'ai vérifié l'association des machines virtuelles dans Virt-Manager.
-
-| Machine | Réseau virtuel |
-|---------|---------------|
-| SERVER-DHCP | Serveur |
-| ROUTAGE - LAN | Serveur |
-| ROUTAGE - OPT1 | COMPTABILITE |
-| ROUTAGE - OPT2 | COMMERCIAL |
-| COMPTA-DEVICE1 | COMPTABILITE pour le premier test |
-
-Cette vérification est importante : même si les adresses IP sont correctement configurées, une VM connectée au mauvais réseau virtuel ne pourra pas fonctionner comme prévu.
-
-Pour tester Commercial, j'ai ensuite déplacé **COMPTA-DEVICE1** sur ce réseau.
-
-Cela m'a permis de tester les deux réseaux sans installer immédiatement une deuxième VM Windows 11.
-
-*Capture à ajouter : configuration de la carte réseau de COMPTA-DEVICE1 dans Virt-Manager.*
-
-## 7. Configuration du relais DHCP sur OPNsense
-
-Une nouvelle difficulté apparaît lorsqu'un serveur DHCP doit distribuer des adresses sur plusieurs sous-réseaux.
-
-Une demande DHCP initiale est envoyée en diffusion sur le réseau local du client. Un routeur ne transmet normalement pas directement cette diffusion vers les autres réseaux.
-
-J'ai donc découvert l'utilité du **relais DHCP**.
-
-Son rôle est de transmettre les demandes DHCP des postes Comptabilité et Commercial vers le serveur Windows situé sur le réseau Serveur.
-
-### Configuration dans OPNsense
-
-Depuis :
+Depuis l'interface web :
 
 **Services → DHCRelay**
 
-J'ai configuré une destination correspondant au serveur DHCP Windows.
+### Configuration de la destination
+
+J'ai commencé par renseigner l'adresse de mon serveur DHCP Windows.
 
 | Paramètre | Configuration |
 |-----------|---------------|
-| Destination DHCP | `192.168.1.1` |
+| Destination | `192.168.1.1` |
 
-J'ai ensuite associé cette destination aux interfaces des réseaux clients.
+### Configuration des relais
+
+J'ai ensuite associé cette destination aux deux interfaces des réseaux clients.
 
 | Interface | Destination |
 |-----------|-------------|
-| COMPTABILITE - OPT1 | Serveur DHCP `192.168.1.1` |
-| COMMERCIAL - OPT2 | Serveur DHCP `192.168.1.1` |
+| COMPTABILITE (OPT1) | SERVER-DHCP - `192.168.1.1` |
+| COMMERCIAL (OPT2) | SERVER-DHCP - `192.168.1.1` |
 
-### Fonctionnement attendu
+L'objectif était que les demandes DHCP provenant de Comptabilité et Commercial soient transmises par OPNsense au serveur Windows.
 
-Lorsqu'un poste Comptabilité demande une adresse IP :
+À ce stade, les interfaces et la destination étaient correctement renseignées.
 
-1. La demande DHCP est envoyée sur le réseau Comptabilité.
-2. OPNsense la reçoit sur l'interface OPT1.
-3. Le relais DHCP transmet la demande à `192.168.1.1`.
-4. Windows Server utilise l'étendue correspondant au réseau Comptabilité.
-5. Le client reçoit sa configuration IP par l'intermédiaire du relais.
-
-Le fonctionnement est identique pour Commercial, en passant cette fois par OPT2.
-
-À ce stade, les interfaces et la destination étaient configurées, mais j'avais oublié un élément important : **l'activation des relais DHCP**.
-
-Je ne l'ai découvert qu'au moment des tests.
+Cependant, je n'avais pas remarqué que les relais n'étaient pas encore activés.
 
 *Capture à ajouter : destination du relais DHCP dans OPNsense.*
 
-*Capture à ajouter : relais Comptabilité et Commercial, dans leur état final activé.*
+*Capture à ajouter : relais Comptabilité et Commercial configurés, dans leur état final activé.*
 
-## 8. Premier test et apparition du problème
+## 8. Premier test et difficultés
 
-Après avoir terminé la configuration, j'ai effectué un premier test depuis la VM **COMPTA-DEVICE1**.
+Une fois la configuration terminée, j'ai lancé un premier test depuis **COMPTA-DEVICE1**, connecté au réseau COMPTABILITE.
 
-Le poste était connecté au réseau Comptabilité, avec sa carte réseau Windows configurée pour obtenir automatiquement une adresse IP.
+Sa carte réseau Windows était configurée pour obtenir automatiquement une adresse IPv4.
 
 Depuis l'invite de commandes, j'ai exécuté :
 
@@ -311,62 +295,54 @@ ipconfig /release
 ipconfig /renew
 ```
 
-**Résultat : le poste ne recevait pas l'adresse attendue depuis Windows Server.**
+**Résultat : le client ne recevait pas l'adresse IP attendue.**
 
-En vérifiant sa configuration avec :
+J'ai ensuite utilisé :
 
 ```cmd
 ipconfig /all
 ```
 
-J'ai constaté qu'il utilisait une adresse IPv4 de type :
+J'ai constaté que Windows utilisait une adresse IPv4 commençant par `169.254`.
 
-`169.254.x.x`
+Après quelques recherches, j'ai découvert qu'il s'agissait d'une adresse **APIPA**, attribuée automatiquement par Windows lorsqu'un poste configuré en DHCP ne parvient pas à obtenir une adresse depuis un serveur DHCP.
 
-### Comprendre l'adresse APIPA
+Cela m'indiquait que la demande DHCP n'avait pas abouti.
 
-Une adresse commençant par `169.254` peut être attribuée automatiquement par Windows lorsqu'un poste configuré en DHCP ne parvient pas à obtenir une adresse depuis un serveur DHCP.
+Je devais donc reprendre les vérifications pour identifier le problème.
 
-C'est ce qu'on appelle une adresse **APIPA**.
+*Capture facultative à ajouter : premier test montrant une adresse APIPA, uniquement si une capture de cet échec a été conservée.*
 
-Cette information m'indiquait que le client n'avait pas obtenu le bail DHCP attendu.
+## 9. Vérifications et résolution du problème
 
-Je devais donc vérifier pourquoi la demande n'aboutissait pas.
+Face à cet échec, j'ai décidé de reprendre les vérifications depuis les éléments de base de mon infrastructure, plutôt que de modifier plusieurs paramètres au hasard.
 
-*Capture facultative à ajouter : résultat du premier test avec une adresse APIPA, uniquement si une capture a été conservée.*
+### 9.1. Vérification des réseaux virtuels
 
-## 9. Recherche et résolution du problème
+J'ai commencé par contrôler la configuration dans Virt-Manager :
 
-Face à ce problème, j'ai choisi de reprendre les vérifications depuis la base de mon infrastructure.
+- Présence des différents réseaux isolés.
+- Raccordement des cartes réseau d'OPNsense.
+- Association de COMPTA-DEVICE1 au réseau COMPTABILITE.
+- Désactivation du service DHCP de libvirt sur les réseaux clients.
 
-### Vérification des réseaux virtuels
+Je voulais notamment m'assurer que le poste était bien connecté au réseau prévu.
 
-J'ai d'abord vérifié dans Virt-Manager :
+### 9.2. Vérification du serveur DHCP
 
-- Que les réseaux virtuels isolés étaient correctement créés.
-- Que les cartes réseau d'OPNsense étaient associées aux bons réseaux.
-- Que COMPTA-DEVICE1 était connecté au réseau Comptabilité.
-- Que le service DHCP de libvirt ne distribuait pas d'adresses à la place de Windows Server.
+Je suis ensuite revenu sur **SERVER-DHCP** pour vérifier :
 
-### Vérification du serveur DHCP
-
-Je suis ensuite retourné sur **SERVER-DHCP** pour contrôler :
-
-- Son adresse IPv4 fixe.
-- Son masque de sous-réseau.
-- Sa passerelle.
+- Son adresse IPv4 fixe et sa passerelle.
 - La configuration des étendues DHCP.
-- Les plages d'adresses prévues.
+- Les plages d'adresses et les masques.
+- Les passerelles et les serveurs DNS.
 - L'activation des étendues.
-- Les passerelles et les adresses DNS distribuées aux clients.
 
 Les paramètres vérifiés correspondaient à la nouvelle architecture.
 
-### Vérification d'OPNsense
+### 9.3. Vérification d'OPNsense
 
-Enfin, j'ai repris la configuration du routeur.
-
-J'ai vérifié les adresses IPv4 de ses trois interfaces :
+Enfin, j'ai vérifié les interfaces du routeur :
 
 | Interface | Adresse |
 |-----------|---------|
@@ -374,25 +350,25 @@ J'ai vérifié les adresses IPv4 de ses trois interfaces :
 | COMPTABILITE | `192.168.2.1/24` |
 | COMMERCIAL | `192.168.3.1/24` |
 
-J'ai ensuite contrôlé la configuration du relais DHCP.
+Je suis ensuite retourné dans **Services → DHCRelay**.
 
-La destination `192.168.1.1` était correcte et les interfaces Comptabilité et Commercial étaient bien associées.
+La destination `192.168.1.1` était correcte et les relais étaient bien associés aux interfaces Comptabilité et Commercial.
 
-C'est à ce moment-là que j'ai remarqué **que les relais DHCP étaient configurés, mais désactivés**.
+**C'est à ce moment-là que j'ai découvert que les relais DHCP étaient configurés, mais désactivés.**
 
-Le problème ne venait donc pas des plages DHCP ou des adresses des interfaces : j'avais simplement oublié d'activer les relais.
+J'avais renseigné les paramètres nécessaires, mais oublié d'activer les relais.
 
 ### Correction
 
-J'ai activé les relais DHCP sur OPNsense, puis appliqué la configuration.
+J'ai activé les deux relais DHCP dans OPNsense, puis appliqué la configuration.
 
-J'ai ensuite repris les tests pour vérifier si cette modification résolvait le problème.
+J'ai ensuite repris les tests depuis le poste client.
 
-## 10. Validation sur le réseau Comptabilité
+## 10. Tests et validation
 
-Après l'activation des relais, j'ai refait une demande DHCP depuis **COMPTA-DEVICE1**, toujours connecté au réseau Comptabilité.
+### 10.1. Test sur le réseau Comptabilité
 
-Depuis Windows 11 :
+Après avoir activé les relais, j'ai effectué une nouvelle demande DHCP depuis COMPTA-DEVICE1, toujours connecté au réseau COMPTABILITE.
 
 ```cmd
 ipconfig /release
@@ -400,102 +376,97 @@ ipconfig /renew
 ipconfig /all
 ```
 
-Cette fois, le poste reçoit une configuration correspondant au réseau `192.168.2.0/24`.
+Cette fois, le poste a reçu une configuration correspondant au réseau `192.168.2.0/24`.
 
-### Configuration attendue
-
-| Paramètre | Valeur |
-|-----------|--------|
+| Paramètre | Configuration attendue |
+|-----------|------------------------|
 | Adresse IPv4 | `192.168.2.2` à `192.168.2.4` |
 | Masque | `255.255.255.0` |
 | Passerelle | `192.168.2.1` |
 | Serveur DHCP | `192.168.1.1` |
 | DNS | `192.168.1.1` |
 
-**Résultat : attribution DHCP fonctionnelle sur Comptabilité.**
+**Résultat : le DHCP fonctionne sur Comptabilité.**
 
-Le poste reçoit désormais une adresse correspondant à l'étendue configurée sur Windows Server, alors qu'il se trouve sur un autre réseau.
+Le poste reçoit une adresse provenant de mon serveur Windows, bien qu'il soit connecté à un réseau différent.
 
-*Capture à ajouter : `ipconfig /all` de COMPTA-DEVICE1 sur Comptabilité, avec l'adresse IPv4, la passerelle et le serveur DHCP.*
+*Capture à ajouter : résultat de `ipconfig /all` sur COMPTA-DEVICE1, montrant une adresse `192.168.2.x`, la passerelle et le serveur DHCP.*
 
-## 11. Validation sur le réseau Commercial
+### 10.2. Test sur le réseau Commercial
 
-Pour tester la deuxième étendue, j'ai utilisé la même VM Windows 11.
+Pour vérifier le fonctionnement de la deuxième étendue, j'ai utilisé la même VM Windows 11.
 
 Depuis Virt-Manager :
 
-1. Arrêt de **COMPTA-DEVICE1**.
-2. Modification de sa carte réseau virtuelle.
-3. Remplacement du réseau **COMPTABILITE** par **COMMERCIAL**.
+1. Arrêt de COMPTA-DEVICE1.
+2. Ouverture des paramètres de sa carte réseau.
+3. Modification du réseau virtuel de COMPTABILITE vers COMMERCIAL.
 4. Redémarrage de Windows 11.
 
-Le client est toujours configuré pour obtenir automatiquement son adresse IP.
+Le poste était toujours configuré pour recevoir automatiquement une adresse IP.
 
-J'ai ensuite contrôlé sa configuration réseau avec :
+J'ai ensuite exécuté :
 
 ```cmd
 ipconfig /all
 ```
 
-### Configuration attendue
+Cette fois, le poste a reçu une configuration correspondant au réseau `192.168.3.0/24`.
 
-| Paramètre | Valeur |
-|-----------|--------|
+| Paramètre | Configuration attendue |
+|-----------|------------------------|
 | Adresse IPv4 | `192.168.3.2` à `192.168.3.4` |
 | Masque | `255.255.255.0` |
 | Passerelle | `192.168.3.1` |
 | Serveur DHCP | `192.168.1.1` |
 | DNS | `192.168.1.1` |
 
-**Résultat : attribution DHCP fonctionnelle sur Commercial.**
+**Résultat : le DHCP fonctionne également sur Commercial.**
 
-Cette vérification confirme que le serveur DHCP Windows peut distribuer les adresses de deux réseaux différents grâce au relais DHCP d'OPNsense.
+Ces deux tests confirment que le serveur Windows peut distribuer des adresses IP sur plusieurs réseaux grâce au relais DHCP d'OPNsense.
 
-Pour réaliser cette validation, je n'ai pas eu besoin d'installer un deuxième poste client : j'ai utilisé successivement la même VM sur les deux réseaux.
+Pour cette validation, je n'ai pas installé de deuxième poste Windows 11 : j'ai utilisé successivement la même VM sur Comptabilité et Commercial.
 
-*Capture à ajouter : `ipconfig /all` de COMPTA-DEVICE1 sur Commercial, avec l'adresse IPv4, la passerelle et le serveur DHCP.*
+*Capture à ajouter : résultat de `ipconfig /all` sur le réseau COMMERCIAL, montrant une adresse `192.168.3.x`, la passerelle et le serveur DHCP.*
 
-## 12. Résultat de cette étape
+## 11. Résultat de cette étape
 
-L'infrastructure initiale a été modifiée pour accueillir plusieurs réseaux distincts.
+L'infrastructure initiale a été modifiée pour fonctionner avec trois réseaux distincts.
 
-La nouvelle organisation repose sur :
+La nouvelle configuration comprend :
 
-- Un **serveur DHCP Windows Server 2022** sur `192.168.1.1`.
-- Un **routeur OPNsense** possédant trois interfaces réseau.
-- Un réseau **Serveur** en `192.168.1.0/24`.
+- **SERVER-DHCP**, sous Windows Server 2022, sur le réseau `192.168.1.0/24`.
+- **ROUTAGE**, sous OPNsense, avec trois interfaces réseau.
 - Un réseau **Comptabilité** en `192.168.2.0/24`.
 - Un réseau **Commercial** en `192.168.3.0/24`.
-- Un **relais DHCP** permettant aux postes des différents réseaux de recevoir leur configuration depuis un serveur unique.
+- Un **relais DHCP** permettant aux postes des deux réseaux clients de recevoir leurs adresses depuis SERVER-DHCP.
 
-Les tests effectués sur Comptabilité et Commercial ont permis de valider l'attribution automatique des adresses IP.
+Les tests réalisés depuis COMPTA-DEVICE1 ont confirmé l'attribution automatique d'adresses IP sur les réseaux Comptabilité et Commercial.
 
-**L'objectif de cette évolution est donc atteint : le serveur DHCP fonctionne désormais avec plusieurs sous-réseaux.**
+**L'objectif de cette évolution est atteint : mon serveur DHCP fonctionne désormais avec plusieurs sous-réseaux, grâce à OPNsense.**
 
-Le renforcement des règles de pare-feu et le filtrage des communications entre les réseaux constituent des possibilités d'amélioration pour une prochaine étape.
+Le renforcement des règles de pare-feu et le filtrage des communications entre les réseaux pourront être étudiés dans une prochaine étape.
 
-## 13. Ce que j'ai appris
+## 12. Ce que j'ai appris
 
 Cette nouvelle partie du projet m'a permis de découvrir et de mettre en pratique :
 
-- L'installation et la première configuration d'un **routeur OPNsense**.
-- La création de plusieurs **réseaux virtuels isolés** sous KVM.
-- L'utilisation de plusieurs cartes réseau sur une même machine virtuelle.
-- Le rôle des **passerelles** dans une infrastructure composée de plusieurs sous-réseaux.
-- La différence entre un **serveur DHCP** et un **relais DHCP**.
-- La configuration de plusieurs **étendues DHCP** sur Windows Server.
-- La signification d'une adresse **APIPA**.
-- L'importance de vérifier méthodiquement la configuration et l'activation des services lorsqu'un problème apparaît.
+- La création et la configuration de mon premier routeur OPNsense.
+- L'organisation de plusieurs réseaux virtuels isolés sous KVM.
+- L'utilisation de plusieurs cartes réseau sur une même VM.
+- La configuration des passerelles et des étendues DHCP sur différents sous-réseaux.
+- La mise en place d'un relais DHCP.
+- L'identification d'une adresse APIPA lors d'un échec d'attribution.
+- L'importance de vérifier l'activation des services lorsqu'un problème apparaît.
 
-J'ai également compris qu'une infrastructure fonctionnelle pouvait être **modifiée et faire l'objet d'une évolution**, sans devoir repartir de zéro.
+Le problème rencontré m'a notamment appris qu'un service pouvait être correctement configuré, sans pour autant être activé.
 
-Au départ, je cherchais simplement à faire fonctionner un serveur DHCP avec un poste client.
+J'ai également compris qu'une infrastructure déjà fonctionnelle pouvait être **modifiée et améliorée**, plutôt que reconstruite entièrement.
 
-En me demandant comment ajouter un deuxième poste sur un réseau différent, j'ai découvert de nouvelles notions et décidé de revoir l'organisation de mon homelab pour les appliquer.
+Au départ, mon objectif était simplement de faire fonctionner un serveur DHCP avec un poste client.
 
-Cette expérience m'a permis de progresser dans ma compréhension de l'administration systèmes et réseaux.
+C'est en me demandant comment ajouter un deuxième poste sur un réseau différent que j'ai décidé d'aller plus loin et de découvrir de nouvelles notions d'administration systèmes et réseaux.
 
 ---
 
-<sub>**Ressources :** Tutoriels et documentation technique, recherches personnelles et utilisation de l'intelligence artificielle pour comprendre les notions de routage, de sous-réseaux et de relais DHCP, accompagner la configuration et résoudre les difficultés rencontrées.</sub>
-
+<sub>**Ressources :** Documentation technique, tutoriels en ligne, recherches personnelles et utilisation de l'intelligence artificielle pour comprendre les notions de routage et de relais DHCP, accompagner la configuration et résoudre les problèmes rencontrés.</sub>
