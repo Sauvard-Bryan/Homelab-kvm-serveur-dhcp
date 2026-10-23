@@ -73,6 +73,12 @@ Cette configuration permet d'utiliser le **serveur DHCP Windows** pour distribue
 
 La vérification de l'attribution DHCP sera présentée dans l'étape suivante.
 
+### Architecture du réseau initial
+
+![Architecture initiale du réseau avec SERVER-DHCP et COMPTA-DEVICE1](../IMAGES/RESEAU-DEPART.png)
+
+### Configuration dans Virt-Manager
+
 ![Configuration du réseau isolé SERVER-TO-COMPTA dans Virt-Manager](../IMAGES/SERVER-TO-COMPTA.png)
 
 ## 6. Ce que j'ai appris
