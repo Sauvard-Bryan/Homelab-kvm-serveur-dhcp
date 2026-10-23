@@ -50,7 +50,7 @@ Deux VM ont été créées sous KVM :
 
 La capture suivante présente les VM utilisées pour cette étape dans **Virt-Manager**.
 
-![VM du projet dans Virt-Manager](../IMAGES/VIRT-VM.png)
+![VM du projet dans Virt-Manager](../IMAGES/VIRT-VM2.png)
 
 ## Évolution prévue
 
