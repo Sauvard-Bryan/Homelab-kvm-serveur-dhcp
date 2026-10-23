@@ -37,7 +37,7 @@ Les postes clients seront désormais placés sur deux réseaux distincts, relié
 
 Pour les tests, j'ai choisi de réutiliser **COMPTA-DEVICE1** en le connectant successivement aux réseaux Comptabilité et Commercial, en raison des ressources limitées de mon PC hôte.
 
-*Schéma de la nouvelle architecture à ajouter : SERVER-DHCP, OPNsense et les réseaux Comptabilité et Commercial.*
+![Architecture finale avec OPNsense et relais DHCP](../IMAGES/SCHEMA-RESEAU-FINAL.png)
 
 ## 2. Création de la VM OPNsense
 
