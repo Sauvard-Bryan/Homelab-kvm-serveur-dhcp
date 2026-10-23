@@ -31,12 +31,12 @@ ainsi que des tutoriels sur YouTube.
 
 Installer Linux sur un PC, découvrir la virtualisation avec **KVM et Virt-Manager**, puis créer un petit réseau d'entreprise autour d'un serveur DHCP Windows.
 
-Le projet a évolué en deux étapes :
+Le projet s'est construit progressivement, en deux étapes :
 
 1. **Créer un premier réseau fonctionnel**, composé d'un serveur DHCP Windows Server 2022 et d'un client Windows 11.
-2. **Faire évoluer ce réseau** en ajoutant un routeur OPNsense, deux réseaux clients distincts et un relais DHCP.
+2. **Faire évoluer cette infrastructure** en créant plusieurs sous-réseaux, avec un routeur OPNsense et un relais DHCP.
 
-L'objectif final est de permettre à un seul serveur DHCP de distribuer des adresses IP à des postes situés sur plusieurs sous-réseaux.
+L'objectif était de comprendre le fonctionnement d'une petite infrastructure réseau, depuis l'attribution d'une adresse IP jusqu'à la communication entre plusieurs réseaux distincts.
 
 ## 1. Première architecture : un réseau isolé
 
@@ -53,15 +53,21 @@ Le serveur DHCP disposait de l'adresse fixe `192.168.1.1` et distribuait les adr
 
 ![Architecture initiale du réseau](IMAGES/RESEAU-DEPART.png)
 
-Cette première étape m'a notamment permis de comprendre le fonctionnement du DHCP et de résoudre un problème lié au service DHCP intégré au réseau par défaut de libvirt.
+Cette première étape m'a permis de découvrir le fonctionnement du DHCP et de résoudre un problème lié au service DHCP intégré au réseau par défaut de libvirt.
 
-Après correction, le client recevait bien une adresse depuis mon serveur Windows.
+Après correction, le client recevait bien une adresse IP depuis mon serveur Windows.
 
-## 2. Évolution : OPNsense et relais DHCP
+## 2. Évolution : plusieurs réseaux et OPNsense
 
-Une fois le premier réseau fonctionnel, j'ai voulu aller plus loin :
+Une fois le premier réseau fonctionnel, j'ai voulu aller plus loin.
 
-**Comment permettre à un serveur DHCP de distribuer des adresses à des postes situés sur des réseaux différents ?**
+Je me suis posé une nouvelle question :
+
+**Comment créer plusieurs réseaux distincts dans mon homelab, alors que mes deux VM communiquaient jusqu'ici sur un seul réseau ?**
+
+En cherchant comment séparer mon infrastructure en plusieurs sous-réseaux, j'ai découvert la nécessité d'utiliser un routeur.
+
+Je me suis ensuite intéressé au relais DHCP pour permettre à mon serveur Windows de continuer à distribuer des adresses IP aux postes situés sur ces différents réseaux.
 
 J'ai donc ajouté une troisième VM, **ROUTAGE**, fonctionnant sous OPNsense.
 
@@ -75,7 +81,9 @@ J'ai donc ajouté une troisième VM, **ROUTAGE**, fonctionnant sous OPNsense.
 
 **L'infrastructure utilise trois VM au total.**
 
-En raison des 8 Go de RAM de mon PC hôte, je n'ai pas créé un deuxième client Windows 11. J'ai réutilisé **COMPTA-DEVICE1**, en le connectant successivement aux réseaux Comptabilité et Commercial.
+En raison des 8 Go de RAM de mon PC hôte, je n'ai pas créé de deuxième client Windows 11.
+
+J'ai réutilisé **COMPTA-DEVICE1**, en le connectant successivement aux réseaux Comptabilité et Commercial pour vérifier leur fonctionnement.
 
 ### Réseaux configurés
 
@@ -85,7 +93,7 @@ En raison des 8 Go de RAM de mon PC hôte, je n'ai pas créé un deuxième clien
 | Comptabilité | `192.168.2.0/24` | `192.168.2.1` |
 | Commercial | `192.168.3.0/24` | `192.168.3.1` |
 
-Le serveur DHCP Windows conserve son adresse `192.168.1.1`.
+Le serveur DHCP Windows conserve son adresse fixe `192.168.1.1`.
 
 OPNsense dispose de trois interfaces réseau, une pour chaque sous-réseau.
 
@@ -95,7 +103,7 @@ OPNsense dispose de trois interfaces réseau, une pour chaque sous-réseau.
 
 Le relais DHCP d'OPNsense transmet les demandes provenant des réseaux Comptabilité et Commercial vers le serveur Windows situé sur le réseau Serveur.
 
-Deux étendues DHCP ont été configurées :
+Deux nouvelles étendues DHCP ont été configurées :
 
 | Étendue | Plage DHCP | Passerelle | DNS |
 |---|---|---|---|
@@ -128,7 +136,7 @@ La même VM a ensuite été raccordée au réseau Commercial.
 
 **Résultat : attribution DHCP réussie.**
 
-Ces deux tests confirment que le relais DHCP permet au serveur Windows de distribuer des adresses sur les deux réseaux clients.
+Ces deux tests confirment que le serveur DHCP Windows peut distribuer des adresses sur les deux réseaux clients grâce au relais DHCP d'OPNsense.
 
 ### Problème rencontré
 
@@ -151,7 +159,7 @@ J'ai documenté les différentes étapes de mon homelab, de l'installation de KV
 | [05 - Tests et validation](HOMELAB/05-Tests-validation.md) | Vérification du fonctionnement du premier réseau |
 | [06 - OPNsense et relais DHCP](HOMELAB/06-OPNsense-routage-relais-dhcp.md) | Routage, nouveaux sous-réseaux, relais DHCP et tests |
 
-Chaque chapitre présente la configuration réalisée, les difficultés rencontrées et les résultats obtenus, avec des captures d'écran.
+Chaque chapitre présente les configurations réalisées, les difficultés rencontrées et les résultats obtenus, avec des captures d'écran.
 
 ## 5. État du projet
 
@@ -171,7 +179,7 @@ Chaque chapitre présente la configuration réalisée, les difficultés rencontr
 - [x] Test DHCP réussi sur le réseau Commercial
 - [x] Documentation des étapes sur GitHub
 
-**Statut : projet terminé pour les objectifs définis.**
+**Statut : objectifs du projet atteints.**
 
 ## 6. Bilan
 
@@ -191,4 +199,19 @@ Le point le plus important pour moi a été de comprendre progressivement **pour
 
 Ce dépôt retrace donc à la fois le résultat final et mon apprentissage, avec les erreurs et les corrections qui ont accompagné le projet.
 
-Le routage et le relais DHCP sont désormais fonctionnels. La sécurisation des échanges entre les réseaux pourra faire l'objet d'un autre projet.
+## 7. Prochaine étape : audit et sécurisation du réseau
+
+Maintenant que l'infrastructure fonctionne, j'aimerais réutiliser ce même homelab pour découvrir un autre domaine : **la sécurité des systèmes et des réseaux**.
+
+L'idée serait de repartir de l'architecture actuelle et de chercher à comprendre :
+
+- Quels services et ports sont accessibles sur les différentes VM ?
+- Quelles communications sont possibles entre les sous-réseaux ?
+- Quels risques présentent les configurations actuelles ?
+- Comment mieux protéger le serveur et les postes clients ?
+
+Cette prochaine étape pourrait notamment inclure l'utilisation d'outils d'analyse réseau, la découverte de **Kali Linux** et la mise en place de règles de pare-feu adaptées dans OPNsense.
+
+L'objectif serait d'effectuer un **premier audit de sécurité dans mon environnement de laboratoire**, puis de corriger progressivement les problèmes identifiés.
+
+**Cette partie n'a pas encore été réalisée.** Elle constituera la suite de mon apprentissage et pourra faire l'objet d'un nouveau projet documenté sur GitHub.
