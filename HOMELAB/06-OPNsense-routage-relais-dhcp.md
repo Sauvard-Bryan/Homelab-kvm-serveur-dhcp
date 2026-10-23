@@ -37,7 +37,7 @@ Les postes clients seront désormais placés sur deux réseaux distincts, relié
 
 Pour les tests, j'ai choisi de réutiliser **COMPTA-DEVICE1** en le connectant successivement aux réseaux Comptabilité et Commercial, en raison des ressources limitées de mon PC hôte.
 
-*Capture à ajouter : schéma de la nouvelle architecture avec SERVER-DHCP, OPNsense et les deux réseaux clients.*
+*Schéma de la nouvelle architecture à ajouter : SERVER-DHCP, OPNsense et les réseaux Comptabilité et Commercial.*
 
 ## 2. Création de la VM OPNsense
 
@@ -57,7 +57,7 @@ Depuis **Virt-Manager**, création d'une nouvelle VM à partir de l'image d'inst
 
 Installation d'OPNsense depuis son image ISO, puis démarrage de la VM pour procéder à sa configuration initiale.
 
-*Capture à ajouter : VM ROUTAGE dans Virt-Manager, avec ses ressources matérielles.*
+![VM ROUTAGE dans Virt-Manager](../IMAGES/VIRT-VM.png)
 
 ## 3. Configuration initiale d'OPNsense
 
@@ -93,7 +93,7 @@ Une fois la VM raccordée au réseau Serveur, cette adresse permet d'accéder à
 
 La configuration des interfaces Comptabilité et Commercial sera effectuée après l'ajout des cartes réseau supplémentaires.
 
-*Capture à ajouter : console OPNsense affichant l'adresse LAN `192.168.1.254/24`.*
+![Console OPNsense affichant les adresses des interfaces réseau](../IMAGES/OPNSENSE-CONFIG.png)
 
 ## 4. Création des réseaux virtuels sous KVM
 
@@ -117,6 +117,10 @@ Lors des premiers tests du projet, j'avais identifié que ce service pouvait dis
 
 Cette configuration permet donc de conserver **SERVER-DHCP** comme serveur chargé de l'attribution des adresses.
 
+La capture suivante montre la configuration du réseau isolé initial, **SERVER-TO-COMPTA**, avec le service DHCP de libvirt désactivé.
+
+![Configuration du réseau isolé SERVER-TO-COMPTA dans Virt-Manager](../IMAGES/SERVER-TO-COMPTA.png)
+
 ### 2. Ajout des cartes réseau au routeur
 
 Pour raccorder OPNsense aux trois réseaux, ajout de **deux cartes réseau supplémentaires** à la VM ROUTAGE.
@@ -131,9 +135,7 @@ La VM dispose désormais de trois interfaces réseau :
 
 Chaque carte est associée à son réseau virtuel depuis les paramètres matériels de la VM dans Virt-Manager.
 
-*Capture à ajouter : réseaux virtuels isolés dans Virt-Manager, avec le DHCP de libvirt désactivé.*
-
-*Capture à ajouter : configuration des trois cartes réseau de la VM ROUTAGE.*
+L'association des interfaces est vérifiée dans OPNsense après le raccordement des cartes.
 
 ## 5. Raccordement des VM et configuration des interfaces
 
@@ -176,9 +178,9 @@ Depuis le menu **Interfaces**, configuration des deux nouvelles interfaces :
 
 Ces adresses seront utilisées comme passerelles pour les machines des trois réseaux.
 
-*Capture à ajouter : configuration des interfaces LAN, OPT1 et OPT2 dans OPNsense.*
+La configuration des interfaces est visible dans **Interfaces → Assignments**.
 
-*Capture à ajouter : carte réseau de COMPTA-DEVICE1 associée à COMPTABILITE dans Virt-Manager.*
+![Association des interfaces LAN, OPT1 et OPT2 dans OPNsense](../IMAGES/OPNSENSE-OPT1-2-3.png)
 
 ## 6. Adaptation du serveur DHCP Windows
 
@@ -228,6 +230,10 @@ Cette étendue permet de distribuer **3 adresses IPv4**.
 
 La passerelle `192.168.2.1` correspond à l'interface OPT1 d'OPNsense.
 
+![Configuration de l'étendue DHCP Comptabilité](../IMAGES/DHCP-COMPTABILITE-ETENDUE.png)
+
+![Options DHCP Comptabilité : passerelle et DNS](../IMAGES/DHCP-COMPTABILITE-OPTIONS.png)
+
 ### 4. Création de l'étendue Commercial
 
 Création d'une troisième étendue pour le réseau Commercial.
@@ -247,11 +253,9 @@ La passerelle `192.168.3.1` correspond à l'interface OPT2 d'OPNsense.
 
 Les réseaux Comptabilité et Commercial utilisent le même serveur DNS, `192.168.1.1`, mais disposent chacun de leur propre passerelle.
 
-*Capture à ajouter : étendues DHCP Windows, avec leur état d'activation.*
+![Configuration de l'étendue DHCP Commercial](../IMAGES/DHCP-COMMERCIAL-ETENDUE.png)
 
-*Capture à ajouter : options d'étendue Comptabilité (003 Routeur et 006 Serveurs DNS).*
-
-*Capture à ajouter : options d'étendue Commercial (003 Routeur et 006 Serveurs DNS).*
+![Options DHCP Commercial : passerelle et DNS](../IMAGES/DHCP-COMMERCIAL-OPTIONS.png)
 
 ## 7. Configuration du relais DHCP
 
@@ -286,9 +290,9 @@ Création des relais associés aux deux réseaux clients.
 
 Les paramètres étaient renseignés, mais l'activation des relais avait été oubliée. Ce problème a été identifié lors des tests suivants.
 
-*Capture à ajouter : destination du serveur DHCP dans DHCRelay.*
+La capture ci-dessous présente la configuration finale, après activation des relais.
 
-*Capture à ajouter : relais Comptabilité et Commercial dans leur état final activé.*
+![Destination et relais DHCP activés dans OPNsense](../IMAGES/DHCRELAY.png)
 
 ## 8. Premier test et difficultés
 
@@ -394,7 +398,7 @@ ipconfig /all
 
 **Résultat : le client reçoit une adresse IPv4 correspondant à l'étendue Comptabilité.**
 
-*Capture à ajouter : `ipconfig /all` montrant l'adresse reçue, la passerelle `192.168.2.1` et le serveur DHCP `192.168.1.1`.*
+![Configuration DHCP reçue sur le réseau Comptabilité](../IMAGES/IPCONFIG-COMPTABILITE.png)
 
 ### 2. Test sur le réseau Commercial
 
@@ -429,7 +433,7 @@ ipconfig /all
 
 Cette vérification confirme que le serveur DHCP Windows distribue correctement les adresses sur les deux réseaux, grâce au relais DHCP d'OPNsense.
 
-*Capture à ajouter : `ipconfig /all` sur Commercial, montrant l'adresse reçue, la passerelle `192.168.3.1` et le serveur DHCP `192.168.1.1`.*
+![Configuration DHCP reçue sur le réseau Commercial](../IMAGES/IPCONFIG.COMMERCIAL.png)
 
 ## 11. Résultat de cette étape
 
