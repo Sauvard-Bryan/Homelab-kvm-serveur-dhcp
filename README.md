@@ -1,16 +1,18 @@
-
-
-
 # Lab de virtualisation KVM : serveur DHCP et poste comptabilité
 
-![Linux](https://img.shields.io/badge/Linux-Débutant-green)
-![Virtualisation](https://img.shields.io/badge/Virtualisation-Débutant%20à%20Intermédiaire-blue)
-![Machines virtuelles](https://img.shields.io/badge/Machines%20virtuelles-Débutant%20à%20Intermédiaire-blue)
-![Réseaux](https://img.shields.io/badge/Réseaux-Débutant%20à%20Intermédiaire-blue)
-![Windows Server](https://img.shields.io/badge/Windows%20Server-Débutant-green)
-![DHCP et routage](https://img.shields.io/badge/DHCP%20et%20routage-Débutant%20à%20Intermédiaire-blue)
+## Compétences techniques
+
+![Linux](https://img.shields.io/badge/Linux-Niveau%201%20%7C%20Découverte-2563EB)
+![Virtualisation KVM](https://img.shields.io/badge/Virtualisation%20KVM-Niveau%201%20%7C%20Découverte-2563EB)
+![Machines virtuelles](https://img.shields.io/badge/Machines%20virtuelles-Niveau%201%20%7C%20Découverte-2563EB)
+![Réseaux IP](https://img.shields.io/badge/Réseaux%20IP-Niveau%201%20%7C%20Découverte-2563EB)
+![Windows Server](https://img.shields.io/badge/Windows%20Server-Niveau%201%20%7C%20Découverte-2563EB)
+![DHCP et routage](https://img.shields.io/badge/DHCP%20et%20routage-Niveau%201%20%7C%20Découverte-2563EB)
+
+<sub>Échelle : Niveau 1 — Découverte / Apprentissage · Niveau 2 — Pratique · Niveau 3 — Débutant · Niveau 4 — Intermédiaire · Niveau 5 — Expert</sub>
 
 **Statut :** Projet terminé — objectifs atteints.
+
 
 
 ## Un projet de découverte 
