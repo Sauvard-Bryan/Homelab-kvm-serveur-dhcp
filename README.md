@@ -1,11 +1,17 @@
 
+
+
 # Lab de virtualisation KVM : serveur DHCP et poste comptabilité
 
-| Linux | Virtualisation (KVM) | Machines virtuelles | Réseau (IP, DHCP) |
-|:---:|:---:|:---:|:---:|
-| 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦⬜⬜⬜ | 🟦🟦⬜⬜ |
+![Linux](https://img.shields.io/badge/Linux-Débutant-green)
+![Virtualisation](https://img.shields.io/badge/Virtualisation-Débutant%20à%20Intermédiaire-blue)
+![Machines virtuelles](https://img.shields.io/badge/Machines%20virtuelles-Débutant%20à%20Intermédiaire-blue)
+![Réseaux](https://img.shields.io/badge/Réseaux-Débutant%20à%20Intermédiaire-blue)
+![Windows Server](https://img.shields.io/badge/Windows%20Server-Débutant-green)
+![DHCP et routage](https://img.shields.io/badge/DHCP%20et%20routage-Débutant%20à%20Intermédiaire-blue)
 
-<sub>Échelle : 🟦⬜⬜⬜ Découverte · 🟦🟦⬜⬜ Apprentissage · 🟦🟦🟦⬜ Pratique · 🟦🟦🟦🟦 Maîtrise</sub>
+**Statut :** Projet terminé — objectifs atteints.
+
 
 ## Un projet de découverte 
 
